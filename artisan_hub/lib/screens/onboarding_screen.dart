@@ -17,23 +17,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<Map<String, dynamic>> _slides = [
     {
-      "icon": Icons.storefront_rounded,
-      "title": "Turn your craft into a ready-to-sell product.",
-      "subtitle": "CraftBridge helps Indian artisans create professional digital catalog listings using simple photo and voice stories.",
+      "step": "STEP 1 OF 3: CAPTURE",
+      "icon": Icons.camera_alt_rounded,
+      "title": "Take a clean photo of your craft",
+      "subtitle": "CraftBridge helps you capture your handmade product using your phone camera or gallery. Original photos are preserved.",
       "color": CraftTheme.terracottaPrimary,
       "lightColor": CraftTheme.terracottaLight,
     },
     {
+      "step": "STEP 2 OF 3: TELL YOUR STORY",
       "icon": Icons.mic_rounded,
-      "title": "Take a photo. Tell your story.",
-      "subtitle": "Speak naturally in your local language. AI organizes your craft description, materials, and care details automatically.",
+      "title": "Speak naturally in your language",
+      "subtitle": "Describe your craft by voice. CraftBridge generates a structured listing draft for your review.",
       "color": CraftTheme.violetTint,
       "lightColor": CraftTheme.violetLight,
     },
     {
+      "step": "STEP 3 OF 3: SELL-READY",
       "icon": Icons.verified_user_rounded,
-      "title": "Fair pricing & seller readiness",
-      "subtitle": "Ensure your craft commands a fair price that covers material costs and labor before sharing with buyers.",
+      "title": "Calculate fair price & export schema",
+      "subtitle": "Set a fair wage floor and prepare standard catalog export formats for buyers.",
       "color": CraftTheme.tealTint,
       "lightColor": CraftTheme.tealLight,
     },
@@ -92,12 +95,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 48),
+                          const SizedBox(height: 36),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: slide["lightColor"] as Color,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              slide["step"] as String,
+                              style: GoogleFonts.notoSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: slide["color"] as Color,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
                           Text(
                             slide["title"] as String,
                             textAlign: TextAlign.center,
                             style: GoogleFonts.notoSans(
-                              fontSize: 24,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                               color: CraftTheme.darkText,
                             ),

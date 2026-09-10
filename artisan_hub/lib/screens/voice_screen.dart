@@ -400,29 +400,82 @@ class _VoiceScreenState extends State<VoiceScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.tune_rounded, size: 16, color: CraftTheme.terracottaPrimary),
-              const SizedBox(width: 6),
-              Text(
-                "AI Extracted Attributes (Review Suggested)",
-                style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+              Row(
+                children: [
+                  const Icon(Icons.tune_rounded, size: 16, color: CraftTheme.terracottaPrimary),
+                  const SizedBox(width: 6),
+                  Text(
+                    "AI Suggestions (Tap to Edit)",
+                    style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: CraftTheme.amberLight,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: CraftTheme.amberTint.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  "Review Required",
+                  style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.amberTint),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _buildSpecChip("CATEGORY", _category, Icons.category_rounded, CraftTheme.violetTint, CraftTheme.violetLight)),
+              Expanded(
+                child: _buildSpecChip(
+                  "CATEGORY",
+                  _category,
+                  Icons.category_rounded,
+                  CraftTheme.violetTint,
+                  CraftTheme.violetLight,
+                  onTap: () => _editFieldDialog("Category", _category, (v) => setState(() => _category = v)),
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _buildSpecChip("MATERIAL", _material, Icons.interests_rounded, CraftTheme.tealTint, CraftTheme.tealLight)),
+              Expanded(
+                child: _buildSpecChip(
+                  "MATERIAL",
+                  _material,
+                  Icons.interests_rounded,
+                  CraftTheme.tealTint,
+                  CraftTheme.tealLight,
+                  onTap: () => _editFieldDialog("Material", _material, (v) => setState(() => _material = v)),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _buildSpecChip("MOTIF / COLOR", _colorMotif, Icons.palette_rounded, CraftTheme.terracottaPrimary, CraftTheme.terracottaLight)),
+              Expanded(
+                child: _buildSpecChip(
+                  "MOTIF / COLOR",
+                  _colorMotif,
+                  Icons.palette_rounded,
+                  CraftTheme.terracottaPrimary,
+                  CraftTheme.terracottaLight,
+                  onTap: () => _editFieldDialog("Motif / Color", _colorMotif, (v) => setState(() => _colorMotif = v)),
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _buildSpecChip("ORIGIN", _origin, Icons.location_on_rounded, CraftTheme.blueTint, CraftTheme.blueLight)),
+              Expanded(
+                child: _buildSpecChip(
+                  "ORIGIN",
+                  _origin,
+                  Icons.location_on_rounded,
+                  CraftTheme.blueTint,
+                  CraftTheme.blueLight,
+                  onTap: () => _editFieldDialog("Origin", _origin, (v) => setState(() => _origin = v)),
+                ),
+              ),
             ],
           ),
         ],
@@ -430,29 +483,38 @@ class _VoiceScreenState extends State<VoiceScreen> {
     );
   }
 
-  Widget _buildSpecChip(String label, String val, IconData icon, Color color, Color bg) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: bg.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: GoogleFonts.notoSans(fontSize: 9, fontWeight: FontWeight.bold, color: color, letterSpacing: 0.5)),
-          const SizedBox(height: 3),
-          Row(
-            children: [
-              Icon(icon, size: 12, color: color),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(val, style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.darkText), maxLines: 1, overflow: TextOverflow.ellipsis),
-              ),
-            ],
-          ),
-        ],
+  Widget _buildSpecChip(String label, String val, IconData icon, Color color, Color bg, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: bg.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(label, style: GoogleFonts.notoSans(fontSize: 9, fontWeight: FontWeight.bold, color: color, letterSpacing: 0.5)),
+                Icon(Icons.edit_outlined, size: 10, color: color),
+              ],
+            ),
+            const SizedBox(height: 3),
+            Row(
+              children: [
+                Icon(icon, size: 12, color: color),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(val, style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.darkText), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

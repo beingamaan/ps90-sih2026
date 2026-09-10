@@ -59,7 +59,7 @@ class _PricingScreenState extends State<PricingScreen> {
     final marketMin = _priceResult?["market_min"] ?? 400.0;
     final marketMax = _priceResult?["market_max"] ?? 950.0;
     final guardrailMsg = _priceResult?["guardrail_message"] ?? "Fair Wage Guardrail Active";
-    final seasonalNote = _priceResult?["seasonal_note"] ?? "Festive demand active!";
+    final String? seasonalNote = _priceResult?["seasonal_note"];
 
     // Calculate dot position on range indicator (0.0 to 1.0)
     final double posRatio = ((recommended - marketMin) / (marketMax - marketMin)).clamp(0.05, 0.95);
@@ -338,30 +338,30 @@ class _PricingScreenState extends State<PricingScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-
-                    // Coral Seasonal Banner
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: CraftTheme.coralLight,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: CraftTheme.coralTint.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.event_note_rounded, color: CraftTheme.coralTint, size: 22),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              seasonalNote,
-                              style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.w600, color: CraftTheme.coralTint),
+                    if (seasonalNote != null && seasonalNote.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: CraftTheme.coralLight,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: CraftTheme.coralTint.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.event_note_rounded, color: CraftTheme.coralTint, size: 22),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                seasonalNote,
+                                style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.w600, color: CraftTheme.coralTint),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 32),
 
                     // Continue to Approval Button

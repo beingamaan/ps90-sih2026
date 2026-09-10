@@ -537,7 +537,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       {
         "title": "Order Readiness",
-        "subtitle": "Check export readiness",
+        "subtitle": "Check catalog readiness",
         "icon": Icons.local_shipping_rounded,
         "color": CraftTheme.amberTint,
         "bg": CraftTheme.amberLight,
