@@ -76,8 +76,8 @@ class ApiService {
       "market_max": 900.0,
       "recommended_price": (materialCost + hoursWorked * 50.0) * 1.08,
       "guardrail_triggered": true,
-      "guardrail_message": "Fair Wage Guardrail active: Guaranteed 100% cost recovery + fair artisan wage.",
-      "seasonal_note": "High festive season demand active!"
+      "guardrail_message": "Fair Wage Guardrail: Price is above the calculated cost floor.",
+      "seasonal_note": ""
     };
   }
 

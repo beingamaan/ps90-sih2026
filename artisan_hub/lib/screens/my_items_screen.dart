@@ -102,7 +102,7 @@ class _MyItemsScreenState extends State<MyItemsScreen> with SingleTickerProvider
         child: ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.only(top: 8, bottom: 20),
           itemCount: _products.length,
           itemBuilder: (context, index) {
             final item = _products[index];

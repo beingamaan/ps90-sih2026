@@ -58,7 +58,7 @@ class _PricingScreenState extends State<PricingScreen> {
     final recommended = _priceResult?["recommended_price"] ?? 0.0;
     final marketMin = _priceResult?["market_min"] ?? 400.0;
     final marketMax = _priceResult?["market_max"] ?? 950.0;
-    final guardrailMsg = _priceResult?["guardrail_message"] ?? "Fair Wage Guardrail Active";
+    final guardrailMsg = _priceResult?["guardrail_message"] ?? "Fair Wage Guardrail: Price is above the calculated cost floor.";
     final String? seasonalNote = _priceResult?["seasonal_note"];
 
     // Calculate dot position on range indicator (0.0 to 1.0)

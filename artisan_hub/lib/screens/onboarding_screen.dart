@@ -35,8 +35,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       "step": "STEP 3 OF 3: SELL-READY",
       "icon": Icons.verified_user_rounded,
-      "title": "Calculate fair price & export schema",
-      "subtitle": "Set a fair wage floor and prepare standard catalog export formats for buyers.",
+      "title": "Set a fair price & prepare your listing",
+      "subtitle": "Ensure your price covers material costs and labor before sharing with buyers.",
       "color": CraftTheme.tealTint,
       "lightColor": CraftTheme.tealLight,
     },

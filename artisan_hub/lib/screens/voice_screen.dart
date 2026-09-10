@@ -217,9 +217,20 @@ class _VoiceScreenState extends State<VoiceScreen> {
                       child: const Icon(Icons.auto_awesome_rounded, color: CraftTheme.violetTint, size: 20),
                     ),
                     const SizedBox(width: 10),
-                    Text(
-                      "AI Extracted Listing Details (Review Suggested)",
-                      style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "AI Listing Suggestions",
+                            style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+                          ),
+                          Text(
+                            "AI suggestion — seller review required. Not independently verified.",
+                            style: GoogleFonts.notoSans(fontSize: 11, color: CraftTheme.mutedText),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -425,6 +436,11 @@ class _VoiceScreenState extends State<VoiceScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            "AI suggestion — not independently verified. Tap any field to edit.",
+            style: GoogleFonts.notoSans(fontSize: 10, color: CraftTheme.mutedText),
           ),
           const SizedBox(height: 12),
           Row(

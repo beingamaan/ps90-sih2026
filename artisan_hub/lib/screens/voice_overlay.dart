@@ -153,11 +153,11 @@ class _VoiceOverlayState extends State<VoiceOverlay> with SingleTickerProviderSt
               const SizedBox(height: 28),
 
               Text(
-                "Or tap a quick example command:",
+                "Try an example voice command:",
                 style: GoogleFonts.notoSans(
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: CraftTheme.mutedText,
+                  fontWeight: FontWeight.bold,
+                  color: CraftTheme.darkText,
                 ),
               ),
               const SizedBox(height: 12),
@@ -170,19 +170,19 @@ class _VoiceOverlayState extends State<VoiceOverlay> with SingleTickerProviderSt
                 children: [
                   ActionChip(
                     avatar: const Icon(Icons.color_lens_rounded, size: 16, color: CraftTheme.terracottaPrimary),
-                    label: Text("Red Chanderi Silk Saree", style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.w600)),
+                    label: Text("Example: Red Chanderi Saree", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.w600)),
                     backgroundColor: CraftTheme.terracottaLight,
                     onPressed: () => _onSelectPrompt("Red Chanderi Silk Saree with zari border"),
                   ),
                   ActionChip(
                     avatar: const Icon(Icons.local_florist_rounded, size: 16, color: CraftTheme.tealTint),
-                    label: Text("Blue Terracotta Water Jug", style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.w600)),
+                    label: Text("Example: Terracotta Pot", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.w600)),
                     backgroundColor: CraftTheme.tealLight,
                     onPressed: () => _onSelectPrompt("Blue painted clay terracotta water pot"),
                   ),
                   ActionChip(
                     avatar: const Icon(Icons.diamond_rounded, size: 16, color: CraftTheme.violetTint),
-                    label: Text("Silver Tribal Necklace", style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.w600)),
+                    label: Text("Example: Tribal Necklace", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.w600)),
                     backgroundColor: CraftTheme.violetLight,
                     onPressed: () => _onSelectPrompt("Handcrafted brass silver beaded tribal necklace"),
                   ),
