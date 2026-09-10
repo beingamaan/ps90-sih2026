@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import '../api_service.dart';
+import '../widgets/responsive_container.dart';
+import '../widgets/step_progress_bar.dart';
+import '../widgets/craft_buttons.dart';
 import 'approval_screen.dart';
 
 class PricingScreen extends StatefulWidget {
@@ -55,7 +58,6 @@ class _PricingScreenState extends State<PricingScreen> {
     final recommended = _priceResult?["recommended_price"] ?? 0.0;
     final marketMin = _priceResult?["market_min"] ?? 400.0;
     final marketMax = _priceResult?["market_max"] ?? 950.0;
-    final guardrailTriggered = _priceResult?["guardrail_triggered"] ?? true;
     final guardrailMsg = _priceResult?["guardrail_message"] ?? "Fair Wage Guardrail Active";
     final seasonalNote = _priceResult?["seasonal_note"] ?? "Festive demand active!";
 
@@ -76,33 +78,22 @@ class _PricingScreenState extends State<PricingScreen> {
           style: GoogleFonts.notoSans(fontSize: 18, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
         ),
       ),
-      body: Stack(
-        children: [
-          // Dashed Circle Background Accent in Bottom Corner
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: CraftTheme.tealTint.withOpacity(0.15),
-                  width: 2,
-                ),
-              ),
-            ),
-          ),
-
-          SafeArea(
-            child: SingleChildScrollView(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: ResponsiveContainer(
+            child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const StepProgressBar(currentStep: 4),
+                  const SizedBox(height: 20),
+
                   // Section 1: Inputs
-                  Text("Material Cost & Time", style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.bold, color: CraftTheme.darkText)),
+                  Text(
+                    "Material Cost & Time",
+                    style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+                  ),
                   const SizedBox(height: 12),
 
                   // Material Cost Card
@@ -112,7 +103,7 @@ class _PricingScreenState extends State<PricingScreen> {
                     decoration: BoxDecoration(
                       color: CraftTheme.cardSurface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: CraftTheme.terracottaPrimary.withOpacity(0.5), width: 1.5),
+                      border: Border.all(color: CraftTheme.terracottaPrimary.withValues(alpha: 0.5), width: 1.5),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -120,9 +111,15 @@ class _PricingScreenState extends State<PricingScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Material Cost", style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.w600, color: CraftTheme.mutedText)),
+                            Text(
+                              "Material Cost",
+                              style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.w600, color: CraftTheme.mutedText),
+                            ),
                             const SizedBox(height: 4),
-                            Text("₹${_materialCost.toInt()}", style: GoogleFonts.notoSans(fontSize: 26, fontWeight: FontWeight.bold, color: CraftTheme.darkText)),
+                            Text(
+                              "₹${_materialCost.toInt()}",
+                              style: GoogleFonts.notoSans(fontSize: 26, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+                            ),
                           ],
                         ),
                         Row(
@@ -187,8 +184,14 @@ class _PricingScreenState extends State<PricingScreen> {
 
                   // Section 2: Result Card
                   if (_isLoading)
-                    const Center(child: CircularProgressIndicator(color: CraftTheme.terracottaPrimary))
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: CircularProgressIndicator(color: CraftTheme.terracottaPrimary),
+                      ),
+                    )
                   else ...[
+                    // Pricing Breakdown Card
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
@@ -196,7 +199,9 @@ class _PricingScreenState extends State<PricingScreen> {
                         color: CraftTheme.cardSurface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: CraftTheme.borderLight),
-                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                        ],
                       ),
                       child: Column(
                         children: [
@@ -209,9 +214,57 @@ class _PricingScreenState extends State<PricingScreen> {
                             iconSize: 20,
                           ),
                           const SizedBox(height: 12),
-                          Text("Recommended Price", style: GoogleFonts.notoSans(fontSize: 14, fontWeight: FontWeight.w600, color: CraftTheme.mutedText)),
+                          Text(
+                            "Recommended Listing Price",
+                            style: GoogleFonts.notoSans(fontSize: 14, fontWeight: FontWeight.w600, color: CraftTheme.mutedText),
+                          ),
                           const SizedBox(height: 4),
-                          Text("₹${recommended.toInt()}", style: GoogleFonts.notoSans(fontSize: 34, fontWeight: FontWeight.bold, color: CraftTheme.darkText)),
+                          Text(
+                            "₹${recommended.toInt()}",
+                            style: GoogleFonts.notoSans(fontSize: 34, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Two-tier pricing view preparation
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: CraftTheme.creamBase,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Column(
+                                  children: [
+                                    Text(
+                                      "ARTISAN KO MILEGA",
+                                      style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.tealTint, letterSpacing: 0.8),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "₹${costFloor.toInt()}",
+                                      style: GoogleFonts.notoSans(fontSize: 18, fontWeight: FontWeight.bold, color: CraftTheme.tealTint),
+                                    ),
+                                  ],
+                                ),
+                                Container(height: 30, width: 1, color: CraftTheme.borderLight),
+                                Column(
+                                  children: [
+                                    Text(
+                                      "BUYER DEGA",
+                                      style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.terracottaPrimary, letterSpacing: 0.8),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "₹${recommended.toInt()}",
+                                      style: GoogleFonts.notoSans(fontSize: 18, fontWeight: FontWeight.bold, color: CraftTheme.terracottaPrimary),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                           const SizedBox(height: 20),
 
                           // Visual Range Indicator Track & Dot
@@ -219,7 +272,6 @@ class _PricingScreenState extends State<PricingScreen> {
                             children: [
                               Stack(
                                 children: [
-                                  // Soft Teal Pill Track
                                   Container(
                                     height: 10,
                                     width: double.infinity,
@@ -228,8 +280,6 @@ class _PricingScreenState extends State<PricingScreen> {
                                       borderRadius: BorderRadius.circular(5),
                                     ),
                                   ),
-
-                                  // Solid Brand Dot
                                   FractionallySizedBox(
                                     widthFactor: posRatio,
                                     child: Align(
@@ -241,7 +291,9 @@ class _PricingScreenState extends State<PricingScreen> {
                                           color: CraftTheme.terracottaPrimary,
                                           shape: BoxShape.circle,
                                           border: Border.all(color: Colors.white, width: 2.5),
-                                          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                                          boxShadow: [
+                                            BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -264,14 +316,14 @@ class _PricingScreenState extends State<PricingScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // 3. Green Guardrail Success Banner
+                    // Green Guardrail Success Banner
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: CraftTheme.greenLight,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: CraftTheme.greenTint.withOpacity(0.3)),
+                        border: Border.all(color: CraftTheme.greenTint.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: [
@@ -288,14 +340,14 @@ class _PricingScreenState extends State<PricingScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // 4. Coral Seasonal Banner
+                    // Coral Seasonal Banner
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: CraftTheme.coralLight,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: CraftTheme.coralTint.withOpacity(0.3)),
+                        border: Border.all(color: CraftTheme.coralTint.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: [
@@ -312,45 +364,35 @@ class _PricingScreenState extends State<PricingScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // Continue to Publish Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ApprovalScreen(
-                                title: widget.title,
-                                description: widget.description,
-                                tags: widget.tags,
-                                makerStory: widget.makerStory,
-                                costFloor: costFloor,
-                                buyerPrice: recommended,
-                                category: widget.category,
-                              ),
+                    // Continue to Approval Button
+                    CraftPrimaryButton(
+                      label: "PROCEED TO APPROVAL →",
+                      icon: Icons.verified_user_rounded,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ApprovalScreen(
+                              title: widget.title,
+                              description: widget.description,
+                              tags: widget.tags,
+                              makerStory: widget.makerStory,
+                              costFloor: costFloor,
+                              buyerPrice: recommended,
+                              category: widget.category,
                             ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: CraftTheme.terracottaPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                          elevation: 2,
-                        ),
-                        child: Text(
-                          "PROCEED TO PUBLISH →",
-                          style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.1),
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
+

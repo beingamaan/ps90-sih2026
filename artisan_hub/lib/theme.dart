@@ -5,44 +5,51 @@ class CraftTheme {
   // ─── COLOR PALETTE ─────────────────────────────────────
   static const Color creamBase = Color(0xFFFAF8F5);
   static const Color cardSurface = Color(0xFFFFFFFF);
-  static const Color darkText = Color(0xFF212121);
-  static const Color mutedText = Color(0xFF666666);
-  static const Color borderLight = Color(0xFFEAE5DF);
+  static const Color darkText = Color(0xFF1F1F1F);
+  static const Color mutedText = Color(0xFF5F6368);
+  static const Color borderLight = Color(0xFFE2DED9);
 
-  // Primary Terracotta/Coral Brand Accent
-  static const Color terracottaPrimary = Color(0xFFE05638);
+  // Primary Terracotta/Coral Brand Accent (Indian Craft Identity)
+  static const Color terracottaPrimary = Color(0xFFD64527);
+  static const Color terracottaDark = Color(0xFFB0331A);
   static const Color terracottaLight = Color(0xFFFBEBE8);
 
   // Functional Tints
-  static const Color violetTint = Color(0xFF7C4DFF);
+  static const Color violetTint = Color(0xFF6B42E0);
   static const Color violetLight = Color(0xFFF0EBFF);
 
-  static const Color tealTint = Color(0xFF00BFA5);
-  static const Color tealLight = Color(0xFFE0F7F4);
+  static const Color tealTint = Color(0xFF00897B);
+  static const Color tealLight = Color(0xFFE0F2F1);
 
-  static const Color coralTint = Color(0xFFE05638);
+  static const Color coralTint = Color(0xFFD64527);
   static const Color coralLight = Color(0xFFFBEBE8);
 
-  static const Color blueTint = Color(0xFF2979FF);
-  static const Color blueLight = Color(0xFFE8F1FF);
+  static const Color blueTint = Color(0xFF1A73E8);
+  static const Color blueLight = Color(0xFFE8F0FE);
 
-  static const Color greenTint = Color(0xFF00C853);
-  static const Color greenLight = Color(0xFFE6F9ED);
+  static const Color greenTint = Color(0xFF2E7D32);
+  static const Color greenLight = Color(0xFFE8F5E9);
+
+  static const Color amberTint = Color(0xFFE65100);
+  static const Color amberLight = Color(0xFFFFF3E0);
 
   // Tag Pill Tint Colors Cycle
   static const List<Color> tagBgColors = [
     Color(0xFFF0EBFF),
     Color(0xFFFBEBE8),
-    Color(0xFFE0F7F4),
-    Color(0xFFE8F1FF),
+    Color(0xFFE0F2F1),
+    Color(0xFFE8F0FE),
   ];
   
   static const List<Color> tagTextColors = [
-    Color(0xFF7C4DFF),
-    Color(0xFFE05638),
-    Color(0xFF00BFA5),
-    Color(0xFF2979FF),
+    Color(0xFF6B42E0),
+    Color(0xFFD64527),
+    Color(0xFF00897B),
+    Color(0xFF1A73E8),
   ];
+
+  // Maximum content width for Desktop Web Responsiveness
+  static const double maxDesktopContentWidth = 960.0;
 
   // ─── THEME DATA ────────────────────────────────────────
   static ThemeData get themeData {
@@ -92,7 +99,7 @@ class CraftTheme {
 
   // ─── REUSABLE WIDGET HELPERS ───────────────────────────
 
-  /// Icon-in-Icon Badge Button
+  /// Icon Badge Container Helper
   static Widget iconBadge({
     required IconData icon,
     required Color color,
@@ -122,7 +129,7 @@ class CraftTheme {
     );
   }
 
-  /// Pill Tag Chip
+  /// Pill Tag Chip Helper
   static Widget tagChip(String label, int index) {
     final bg = tagBgColors[index % tagBgColors.length];
     final text = tagTextColors[index % tagTextColors.length];

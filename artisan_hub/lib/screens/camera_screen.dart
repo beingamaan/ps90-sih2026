@@ -1,11 +1,13 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
 import '../api_service.dart';
+import '../widgets/responsive_container.dart';
+import '../providers/product_draft_provider.dart';
 import 'voice_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -20,7 +22,7 @@ class _CameraScreenState extends State<CameraScreen> {
   Uint8List? _originalBytes;
   String? _enhancedB64;
   bool _isLoading = false;
-  double _sliderPos = 0.5; // Drag position (0.0 to 1.0)
+  double _sliderPos = 0.5;
   int _selectedBgIndex = 0;
   String _selectedCraftName = "Handcrafted Artisan Item";
 
@@ -40,8 +42,9 @@ class _CameraScreenState extends State<CameraScreen> {
       final filename = image.name.isNotEmpty ? image.name : 'craft_photo.jpg';
       _processBytes(bytes, filename, "Uploaded Craft Photo");
     } catch (e) {
-      print('Pick Image error: $e');
-      // Fallback to sample photo if device camera/picker fails on web
+      if (kDebugMode) {
+        print('Pick Image error: $e');
+      }
       _loadSampleCraft("Textile Saree");
     }
   }
@@ -54,7 +57,7 @@ class _CameraScreenState extends State<CameraScreen> {
       _selectedCraftName = craftName;
     });
 
-    // Send to real remove.bg backend API
+    // Send to backend enhance-image endpoint (uses local rembg AI model without calling remove.bg API)
     final resultB64 = await ApiService.enhanceImage(bytes, filename);
     
     if (mounted) {
@@ -62,7 +65,6 @@ class _CameraScreenState extends State<CameraScreen> {
         if (resultB64 != null && resultB64.isNotEmpty) {
           _enhancedB64 = resultB64;
         } else {
-          // Fallback: encode original if API is offline
           final b64 = base64Encode(bytes);
           _enhancedB64 = "data:image/png;base64,$b64";
         }
@@ -71,41 +73,35 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
-  /// Generates real colored sample craft image bytes with background texture
   Future<void> _loadSampleCraft(String type) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, 400, 400));
     final paint = Paint();
 
-    // 1. Draw Busy/Wood-texture background (Original Photo)
-    paint.color = const Color(0xFF5D4037); // Dark wood floor background
+    paint.color = const Color(0xFF5D4037);
     canvas.drawRect(const Rect.fromLTWH(0, 0, 400, 400), paint);
 
-    // Wood floor planks texture
     paint.color = const Color(0xFF3E2723);
     for (double i = 0; i < 400; i += 40) {
       canvas.drawRect(Rect.fromLTWH(0, i, 400, 4), paint);
     }
-    // Background noise dots
-    paint.color = const Color(0xFF8D6E63).withOpacity(0.5);
+    paint.color = const Color(0xFF8D6E63).withValues(alpha: 0.5);
     for (int i = 0; i < 20; i++) {
       canvas.drawCircle(Offset((i * 23) % 400, (i * 37) % 400), 8, paint);
     }
 
-    // 2. Draw Center Craft Object (Craft Item to isolate)
     if (type == "Textile Saree") {
-      paint.color = const Color(0xFFD81B60); // Crimson Saree
+      paint.color = const Color(0xFFD81B60);
       canvas.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(100, 80, 200, 240), const Radius.circular(20)), paint);
-      // Gold Zari Border
       paint.color = const Color(0xFFFFD700);
       canvas.drawRect(const Rect.fromLTWH(100, 280, 200, 40), paint);
     } else if (type == "Terracotta Pot") {
-      paint.color = const Color(0xFFE64A19); // Terracotta Clay
+      paint.color = const Color(0xFFE64A19);
       canvas.drawOval(const Rect.fromLTWH(110, 100, 180, 200), paint);
       paint.color = const Color(0xFFBF360C);
       canvas.drawRect(const Rect.fromLTWH(150, 70, 100, 40), paint);
     } else {
-      paint.color = const Color(0xFFFBC02D); // Gold/Brass Necklace
+      paint.color = const Color(0xFFFBC02D);
       canvas.drawCircle(const Offset(200, 200), 90, paint);
       paint.color = const Color(0xFF5D4037);
       canvas.drawCircle(const Offset(200, 200), 60, paint);
@@ -143,7 +139,7 @@ class _CameraScreenState extends State<CameraScreen> {
             ),
             const SizedBox(width: 10),
             Text(
-              "Image Studio AI",
+              "Photo Studio Assistant",
               style: GoogleFonts.notoSans(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -155,22 +151,21 @@ class _CameraScreenState extends State<CameraScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Photo Picker Buttons if no image yet
-              if (_originalBytes == null) _buildPhotoPickerCards(),
+          child: ResponsiveContainer(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_originalBytes == null) _buildPhotoPickerCards(),
 
-              // Image Studio Interactive View
-              if (_originalBytes != null) ...[
-                _buildStudioComparison(),
-                const SizedBox(height: 24),
-                _buildBackgroundPresetChips(),
-                const SizedBox(height: 28),
-                _buildActionButtons(),
+                if (_originalBytes != null) ...[
+                  _buildStudioComparison(),
+                  const SizedBox(height: 20),
+                  _buildBackgroundPresetChips(),
+                  const SizedBox(height: 24),
+                  _buildActionButtons(),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -181,18 +176,26 @@ class _CameraScreenState extends State<CameraScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 10),
+        Text(
+          "Step 1: Capture or Upload Craft Photo",
+          style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          "Take a clean photo of your craft. The original photo is always preserved.",
+          style: GoogleFonts.notoSans(fontSize: 13, color: CraftTheme.mutedText),
+        ),
+        const SizedBox(height: 16),
 
-        // 1. Take Photo Card
         GestureDetector(
           onTap: () => _pickImage(ImageSource.camera),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
             decoration: BoxDecoration(
               color: CraftTheme.tealLight,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: CraftTheme.tealTint.withOpacity(0.4), width: 1.5),
+              border: Border.all(color: CraftTheme.tealTint.withValues(alpha: 0.4), width: 1.5),
             ),
             child: Column(
               children: [
@@ -200,21 +203,21 @@ class _CameraScreenState extends State<CameraScreen> {
                   icon: Icons.camera_alt_rounded,
                   color: CraftTheme.tealTint,
                   lightColor: Colors.white,
-                  outerSize: 64,
-                  innerSize: 44,
-                  iconSize: 24,
+                  outerSize: 60,
+                  innerSize: 42,
+                  iconSize: 22,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Text(
                   "TAKE CRAFT PHOTO",
                   style: GoogleFonts.notoSans(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: CraftTheme.tealTint,
-                    letterSpacing: 1.1,
+                    letterSpacing: 1.0,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   "Snap a photo with your device camera",
                   style: GoogleFonts.notoSans(fontSize: 13, color: CraftTheme.mutedText),
@@ -225,12 +228,11 @@ class _CameraScreenState extends State<CameraScreen> {
         ),
         const SizedBox(height: 14),
 
-        // 2. Choose from Gallery Button
         GestureDetector(
           onTap: () => _pickImage(ImageSource.gallery),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
             decoration: BoxDecoration(
               color: CraftTheme.cardSurface,
               borderRadius: BorderRadius.circular(16),
@@ -239,7 +241,7 @@ class _CameraScreenState extends State<CameraScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.photo_library_rounded, color: CraftTheme.darkText, size: 22),
+                const Icon(Icons.photo_library_rounded, color: CraftTheme.darkText, size: 20),
                 const SizedBox(width: 10),
                 Text(
                   "Choose from Device Gallery",
@@ -253,34 +255,33 @@ class _CameraScreenState extends State<CameraScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
 
-        // 3. One-Click Sample Craft Photos
         Text(
-          "Or test instantly with 1-click sample craft photos:",
-          style: GoogleFonts.notoSans(fontSize: 14, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+          "Or test with sample craft photos:",
+          style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
 
         Wrap(
           spacing: 10,
           runSpacing: 10,
           children: [
             ActionChip(
-              avatar: const Icon(Icons.checkroom_rounded, color: CraftTheme.terracottaPrimary, size: 18),
-              label: Text("Chanderi Silk Saree", style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.w600)),
+              avatar: const Icon(Icons.checkroom_rounded, color: CraftTheme.terracottaPrimary, size: 16),
+              label: Text("Chanderi Silk Saree", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.w600)),
               backgroundColor: CraftTheme.terracottaLight,
               onPressed: () => _loadSampleCraft("Textile Saree"),
             ),
             ActionChip(
-              avatar: const Icon(Icons.local_florist_rounded, color: CraftTheme.tealTint, size: 18),
-              label: Text("Terracotta Water Pot", style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.w600)),
+              avatar: const Icon(Icons.local_florist_rounded, color: CraftTheme.tealTint, size: 16),
+              label: Text("Terracotta Water Pot", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.w600)),
               backgroundColor: CraftTheme.tealLight,
               onPressed: () => _loadSampleCraft("Terracotta Pot"),
             ),
             ActionChip(
-              avatar: const Icon(Icons.diamond_rounded, color: CraftTheme.violetTint, size: 18),
-              label: Text("Brass Jewelry Ornament", style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.w600)),
+              avatar: const Icon(Icons.diamond_rounded, color: CraftTheme.violetTint, size: 16),
+              label: Text("Brass Jewelry Ornament", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.w600)),
               backgroundColor: CraftTheme.violetLight,
               onPressed: () => _loadSampleCraft("Brass Jewelry"),
             ),
@@ -301,7 +302,7 @@ class _CameraScreenState extends State<CameraScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Before / After Comparison",
+                  "Original vs Studio Enhanced",
                   style: GoogleFonts.notoSans(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -328,9 +329,8 @@ class _CameraScreenState extends State<CameraScreen> {
               ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
 
-        // Interactive Drag Comparison Container with LayoutBuilder
         LayoutBuilder(
           builder: (context, constraints) {
             final containerWidth = constraints.maxWidth;
@@ -343,7 +343,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: CraftTheme.borderLight, width: 1.5),
                 boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, 4)),
+                  BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4)),
                 ],
               ),
               child: ClipRRect(
@@ -356,7 +356,6 @@ class _CameraScreenState extends State<CameraScreen> {
                   },
                   child: Stack(
                     children: [
-                      // After Image (Studio Clean Background - matching BoxFit.contain)
                       Positioned.fill(
                         child: Container(
                           padding: const EdgeInsets.all(16),
@@ -369,7 +368,6 @@ class _CameraScreenState extends State<CameraScreen> {
                         ),
                       ),
 
-                      // Before Image (Original Upload clipped by slider fraction - matching BoxFit.contain)
                       Positioned.fill(
                         child: ClipRect(
                           clipper: _BeforeClipper(_sliderPos),
@@ -380,7 +378,6 @@ class _CameraScreenState extends State<CameraScreen> {
                         ),
                       ),
 
-                      // Vertical Split Divider Line
                       Positioned(
                         left: containerWidth * _sliderPos - 1.5,
                         top: 0,
@@ -391,7 +388,6 @@ class _CameraScreenState extends State<CameraScreen> {
                         ),
                       ),
 
-                      // Drag Handle Circle Icon
                       Positioned(
                         left: handleLeft,
                         top: 140,
@@ -401,13 +397,12 @@ class _CameraScreenState extends State<CameraScreen> {
                           decoration: const BoxDecoration(
                             color: CraftTheme.tealTint,
                             shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 2))],
+                            boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 6)],
                           ),
                           child: const Icon(Icons.unfold_more_rounded, color: Colors.white, size: 22),
                         ),
                       ),
 
-                      // Badges
                       Positioned(
                         top: 12,
                         left: 12,
@@ -423,7 +418,7 @@ class _CameraScreenState extends State<CameraScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(color: CraftTheme.tealTint, borderRadius: BorderRadius.circular(999)),
-                          child: Text("Studio AI Enhanced", style: GoogleFonts.notoSans(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                          child: Text("Studio Enhanced", style: GoogleFonts.notoSans(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
@@ -443,9 +438,9 @@ class _CameraScreenState extends State<CameraScreen> {
       children: [
         Text(
           "Studio Background Presets",
-          style: GoogleFonts.notoSans(fontSize: 14, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+          style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Row(
           children: List.generate(_bgPresets.length, (index) {
             final isSelected = _selectedBgIndex == index;
@@ -453,7 +448,7 @@ class _CameraScreenState extends State<CameraScreen> {
               onTap: () => setState(() => _selectedBgIndex = index),
               child: Container(
                 margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: isSelected ? CraftTheme.tealTint : CraftTheme.cardSurface,
                   borderRadius: BorderRadius.circular(999),
@@ -465,7 +460,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 child: Text(
                   _bgPresets[index]["name"] as String,
                   style: GoogleFonts.notoSans(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: isSelected ? Colors.white : CraftTheme.darkText,
                   ),
@@ -495,11 +490,18 @@ class _CameraScreenState extends State<CameraScreen> {
             child: Text("Change Photo", style: GoogleFonts.notoSans(fontSize: 14, fontWeight: FontWeight.bold, color: CraftTheme.darkText)),
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         Expanded(
           flex: 2,
           child: ElevatedButton(
             onPressed: () {
+              try {
+                final provider = ProductDraftProvider.of(context, listen: false);
+                provider.updateImage(
+                  originalBytes: _originalBytes,
+                  enhancedB64: _enhancedB64,
+                );
+              } catch (_) {}
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -515,7 +517,7 @@ class _CameraScreenState extends State<CameraScreen> {
             ),
             child: Text(
               "USE THIS PHOTO →",
-              style: GoogleFonts.notoSans(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.0),
+              style: GoogleFonts.notoSans(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5),
             ),
           ),
         ),

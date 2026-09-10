@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'theme.dart';
 import 'screens/onboarding_screen.dart';
+import 'providers/product_draft_provider.dart';
 
 void main() {
-  runApp(const ArtisanHubApp());
+  runApp(
+    ProductDraftScope(
+      provider: ProductDraftProvider(),
+      child: const ArtisanHubApp(),
+    ),
+  );
 }
 
 class ArtisanHubApp extends StatelessWidget {

@@ -41,9 +41,10 @@ class _VoiceOverlayState extends State<VoiceOverlay> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black.withOpacity(0.5),
+      backgroundColor: Colors.black.withValues(alpha: 0.5),
       body: Center(
         child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
           margin: const EdgeInsets.symmetric(horizontal: 24),
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
@@ -100,7 +101,7 @@ class _VoiceOverlayState extends State<VoiceOverlay> with SingleTickerProviderSt
                   return Container(
                     padding: EdgeInsets.all(16 * _animController.value),
                     decoration: BoxDecoration(
-                      color: CraftTheme.terracottaPrimary.withOpacity(0.15),
+                      color: CraftTheme.terracottaPrimary.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Container(

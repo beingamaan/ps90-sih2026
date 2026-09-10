@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'config/api_config.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://127.0.0.1:8000';
+  static String get baseUrl => ApiConfig.baseUrl;
+
 
   // ─── 1. ENHANCE IMAGE (REMOVE.BG) ─────────────────────
   static Future<String?> enhanceImage(Uint8List imageBytes, String filename) async {
