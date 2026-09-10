@@ -23,11 +23,14 @@ class TrustClaim {
     'GI',
     'GI Tag',
     'Handloom Mark',
+    'Handloom',
     'Silk Mark',
     'Pure Silk',
     'Khadi',
     'Organic',
     'Craft Mark',
+    'Certified',
+    'Government certified',
   ];
 
   /// Checks if a given claim term is regulated/sensitive

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import '../api_service.dart';
+import '../providers/product_draft_provider.dart';
+import '../models/product_facts.dart';
 import '../widgets/responsive_container.dart';
 import '../widgets/step_progress_bar.dart';
 import '../widgets/craft_buttons.dart';
@@ -189,42 +191,91 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
                     const SizedBox(height: 20),
 
                     // Product Summary Card
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: CraftTheme.cardSurface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: CraftTheme.borderLight),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "LISTING PREVIEW",
-                            style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.mutedText, letterSpacing: 1.0),
+                    Builder(
+                      builder: (context) {
+                        ProductFacts facts = const ProductFacts();
+                        List<dynamic> trustClaims = const [];
+                        try {
+                          final draft = ProductDraftProvider.of(context, listen: false).currentDraft;
+                          facts = draft.facts;
+                          trustClaims = draft.trustClaims;
+                        } catch (_) {}
+
+                        final activeClaims = trustClaims.where((c) => c.provenanceStatus != 'CLAIM_EXCLUDED').toList();
+                        final excludedClaims = trustClaims.where((c) => c.provenanceStatus == 'CLAIM_EXCLUDED').toList();
+
+                        return Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: CraftTheme.cardSurface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: CraftTheme.borderLight),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            widget.title,
-                            style: GoogleFonts.notoSans(fontSize: 18, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                "Artisan Floor: ₹${widget.costFloor.toInt()}",
-                                style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.w600, color: CraftTheme.tealTint),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "LISTING PREVIEW",
+                                    style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.mutedText, letterSpacing: 1.0),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: CraftTheme.greenLight,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      "Seller Verified Draft",
+                                      style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.greenTint),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 8),
                               Text(
-                                "Buyer Price: ₹${widget.buyerPrice.toInt()}",
-                                style: GoogleFonts.notoSans(fontSize: 15, fontWeight: FontWeight.bold, color: CraftTheme.terracottaPrimary),
+                                widget.title,
+                                style: GoogleFonts.notoSans(fontSize: 18, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+                              ),
+                              const SizedBox(height: 8),
+                              
+                              // Provenance & Facts Summary Chips
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  if (facts.material.isNotEmpty)
+                                    _buildStatusChip("Material: ${facts.material}", facts.getFieldStatus('material')),
+                                  if (facts.origin.isNotEmpty)
+                                    _buildStatusChip("Origin: ${facts.origin}", facts.getFieldStatus('origin')),
+                                  ...activeClaims.map((c) => _buildStatusChip("${c.claimName}", c.provenanceStatus == 'EVIDENCE_SUBMITTED' ? 'Evidence Submitted' : 'Self Declared', isTeal: c.provenanceStatus == 'EVIDENCE_SUBMITTED')),
+                                  ...excludedClaims.map((c) => _buildStatusChip("${c.claimName}", "Not claimed", isGrey: true)),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              const Divider(height: 1),
+                              const SizedBox(height: 10),
+
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "Artisan Floor: ₹${widget.costFloor.toInt()}",
+                                    style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.w600, color: CraftTheme.tealTint),
+                                  ),
+                                  Text(
+                                    "Buyer Price: ₹${widget.buyerPrice.toInt()}",
+                                    style: GoogleFonts.notoSans(fontSize: 15, fontWeight: FontWeight.bold, color: CraftTheme.terracottaPrimary),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 32),
 
@@ -296,6 +347,34 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String label, String status, {bool isTeal = false, bool isGrey = false}) {
+    Color bg = CraftTheme.blueLight;
+    Color fg = CraftTheme.blueTint;
+
+    if (isGrey) {
+      bg = Colors.grey.shade200;
+      fg = Colors.grey.shade700;
+    } else if (isTeal) {
+      bg = CraftTheme.tealLight;
+      fg = CraftTheme.tealTint;
+    } else if (status == FactStatus.sellerConfirmed) {
+      bg = CraftTheme.greenLight;
+      fg = CraftTheme.greenTint;
+    } else if (status == FactStatus.aiSuggested) {
+      bg = CraftTheme.amberLight;
+      fg = CraftTheme.amberTint;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      child: Text(
+        "$label • $status",
+        style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: fg),
       ),
     );
   }

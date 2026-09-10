@@ -7,8 +7,10 @@ import '../api_service.dart';
 import '../services/audio_player/audio_player_service.dart';
 import '../providers/product_draft_provider.dart';
 import '../models/product_facts.dart';
+import '../models/trust_claim.dart';
 import '../models/catalogue.dart';
 import '../widgets/responsive_container.dart';
+import '../widgets/product_facts_review_widget.dart';
 import 'pricing_screen.dart';
 
 class VoiceScreen extends StatefulWidget {
@@ -37,6 +39,19 @@ class _VoiceScreenState extends State<VoiceScreen> {
   String _material = "Pure Handloom Silk";
   String _colorMotif = "Gold Zari & Floral Motifs";
   String _origin = "Chanderi Weaving Village, MP";
+
+  ProductFacts _facts = const ProductFacts(
+    name: "Handcrafted Silk Chanderi Saree",
+    category: "Textile",
+    material: "Pure Handloom Silk",
+    colorMotif: "Gold Zari & Floral Motifs",
+    origin: "Chanderi Weaving Village, MP",
+    craftTechnique: "Handloom Weaving",
+  );
+  List<TrustClaim> _trustClaims = const [
+    TrustClaim(claimName: "Handloom Mark", isSensitive: true, provenanceStatus: 'EVIDENCE_REQUIRED', notes: 'Requires evidence / seller verification'),
+    TrustClaim(claimName: "Pure Silk", isSensitive: true, provenanceStatus: 'EVIDENCE_REQUIRED', notes: 'Requires evidence / seller verification'),
+  ];
 
   int _selectedLangIndex = 0;
   final List<Map<String, String>> _languages = [
@@ -118,19 +133,30 @@ class _VoiceScreenState extends State<VoiceScreen> {
       _material = data["material"] ?? _material;
       _colorMotif = data["color_motif"] ?? _colorMotif;
       _origin = data["origin"] ?? _origin;
+
+      _facts = ProductFacts(
+        name: _title,
+        category: _category,
+        material: _material,
+        colorMotif: _colorMotif,
+        origin: _origin,
+        craftTechnique: data["craft_technique"] ?? "Handloom Weaving",
+        statusMap: {
+          'category': FactStatus.aiSuggested,
+          'material': FactStatus.aiSuggested,
+          'color_motif': FactStatus.aiSuggested,
+          'origin': FactStatus.aiSuggested,
+          'craft_technique': FactStatus.aiSuggested,
+        },
+      );
       _isLoading = false;
     });
 
     try {
       final provider = ProductDraftProvider.of(context, listen: false);
       provider.updateTranscript(text);
-      provider.updateFacts(ProductFacts(
-        name: _title,
-        category: _category,
-        material: _material,
-        colorMotif: _colorMotif,
-        origin: _origin,
-      ));
+      provider.updateFacts(_facts);
+      provider.updateTrustClaims(_trustClaims);
       provider.updateCatalogue(Catalogue(
         title: _title,
         description: _description,
@@ -265,7 +291,30 @@ class _VoiceScreenState extends State<VoiceScreen> {
                 ),
                 const SizedBox(height: 18),
 
-                _buildCraftSpecificationsCard(),
+                ProductFactsReviewWidget(
+                  facts: _facts,
+                  trustClaims: _trustClaims,
+                  onFactsChanged: (newFacts) {
+                    setState(() {
+                      _facts = newFacts;
+                      _category = newFacts.category;
+                      _material = newFacts.material;
+                      _colorMotif = newFacts.colorMotif;
+                      _origin = newFacts.origin;
+                    });
+                    try {
+                      ProductDraftProvider.of(context, listen: false).updateFacts(newFacts);
+                    } catch (_) {}
+                  },
+                  onTrustClaimsChanged: (newClaims) {
+                    setState(() {
+                      _trustClaims = newClaims;
+                    });
+                    try {
+                      ProductDraftProvider.of(context, listen: false).updateTrustClaims(newClaims);
+                    } catch (_) {}
+                  },
+                ),
                 const SizedBox(height: 18),
 
                 GestureDetector(
@@ -398,142 +447,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
     );
   }
 
-  Widget _buildCraftSpecificationsCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: CraftTheme.cardSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CraftTheme.borderLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.tune_rounded, size: 16, color: CraftTheme.terracottaPrimary),
-                  const SizedBox(width: 6),
-                  Text(
-                    "AI Suggestions (Tap to Edit)",
-                    style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: CraftTheme.amberLight,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: CraftTheme.amberTint.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  "Review Required",
-                  style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.amberTint),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            "AI suggestion — not independently verified. Tap any field to edit.",
-            style: GoogleFonts.notoSans(fontSize: 10, color: CraftTheme.mutedText),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSpecChip(
-                  "CATEGORY",
-                  _category,
-                  Icons.category_rounded,
-                  CraftTheme.violetTint,
-                  CraftTheme.violetLight,
-                  onTap: () => _editFieldDialog("Category", _category, (v) => setState(() => _category = v)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildSpecChip(
-                  "MATERIAL",
-                  _material,
-                  Icons.interests_rounded,
-                  CraftTheme.tealTint,
-                  CraftTheme.tealLight,
-                  onTap: () => _editFieldDialog("Material", _material, (v) => setState(() => _material = v)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSpecChip(
-                  "MOTIF / COLOR",
-                  _colorMotif,
-                  Icons.palette_rounded,
-                  CraftTheme.terracottaPrimary,
-                  CraftTheme.terracottaLight,
-                  onTap: () => _editFieldDialog("Motif / Color", _colorMotif, (v) => setState(() => _colorMotif = v)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildSpecChip(
-                  "ORIGIN",
-                  _origin,
-                  Icons.location_on_rounded,
-                  CraftTheme.blueTint,
-                  CraftTheme.blueLight,
-                  onTap: () => _editFieldDialog("Origin", _origin, (v) => setState(() => _origin = v)),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildSpecChip(String label, String val, IconData icon, Color color, Color bg, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: bg.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(label, style: GoogleFonts.notoSans(fontSize: 9, fontWeight: FontWeight.bold, color: color, letterSpacing: 0.5)),
-                Icon(Icons.edit_outlined, size: 10, color: color),
-              ],
-            ),
-            const SizedBox(height: 3),
-            Row(
-              children: [
-                Icon(icon, size: 12, color: color),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(val, style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.darkText), maxLines: 1, overflow: TextOverflow.ellipsis),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildVoiceInputBar() {
     return Container(
