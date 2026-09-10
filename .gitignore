@@ -1,0 +1,34 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+artisan_hub/.dart_tool/
+artisan_hub/build/
+artisan_hub/.flutter-plugins
+artisan_hub/.flutter-plugins-dependencies
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+env/
+venv/
+backend/__pycache__/
+
+# Database & Environment Secrets
+*.db
+*.sqlite3
+.env
+*.env
+backend/.env
+
+# IDEs & OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
