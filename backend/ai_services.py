@@ -269,12 +269,13 @@ def generate_listing(transcript: str, category: str = "Textile", target_lang: st
                 raw_text = raw_text[:-3]
             
             data = json.loads(raw_text.strip())
-            reg = data.get("regional_description") or data.get("hindi_description") or fallback_regional
+            reg = data.get("regional_description") or fallback_regional
+            hindi = data.get("hindi_description") or reg
             return {
                 "title": data.get("title", fallback_listing["title"]),
                 "description": data.get("description", fallback_listing["description"]),
                 "regional_description": reg,
-                "hindi_description": reg,
+                "hindi_description": hindi,
                 "tags": data.get("tags", fallback_listing["tags"]),
                 "maker_story": data.get("maker_story", dynamic_maker_story),
                 "category": data.get("category", detected_category),

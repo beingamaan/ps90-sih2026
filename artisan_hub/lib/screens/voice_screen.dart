@@ -223,11 +223,11 @@ class _VoiceScreenState extends State<VoiceScreen> {
                           color: CraftTheme.violetLight,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.edit_note_rounded, color: CraftTheme.violetTint, size: 20),
+                        child: const Icon(Icons.auto_awesome_rounded, color: CraftTheme.violetTint, size: 20),
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        "Your Listing",
+                        "Multilingual Auto-Cataloger Listing",
                         style: GoogleFonts.notoSans(fontSize: 18, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
                       ),
                     ],
@@ -256,7 +256,9 @@ class _VoiceScreenState extends State<VoiceScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // 4. Multi-Colored Tag Chips
+                  // 4. Multi-Colored SEO Tag Chips
+                  Text("SEO Search Keywords (खोज टैग):", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.bold, color: CraftTheme.mutedText)),
+                  const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -268,9 +270,9 @@ class _VoiceScreenState extends State<VoiceScreen> {
                   _buildCraftSpecificationsCard(),
                   const SizedBox(height: 20),
 
-                  // 5. Description Block (Tap to edit)
+                  // 5. English Description Block (For B2B & Urban E-Commerce)
                   GestureDetector(
-                    onTap: () => _editFieldDialog("Description", _description, (v) => setState(() => _description = v)),
+                    onTap: () => _editFieldDialog("English Description", _description, (v) => setState(() => _description = v)),
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
@@ -285,7 +287,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text("Description", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.bold, color: CraftTheme.mutedText)),
+                              Text("SEO Product Description (English • B2B Buyers)", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.bold, color: CraftTheme.mutedText)),
                               const Icon(Icons.edit_outlined, size: 16, color: CraftTheme.mutedText),
                             ],
                           ),
@@ -297,7 +299,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // 5b. Hindi Description Card (विवरण - हिंदी में)
+                  // 5b. Hindi Description Card (For ONDC & GeM Portals)
                   GestureDetector(
                     onTap: () => _editFieldDialog("विवरण (Hindi)", _hindiDescription, (v) => setState(() => _hindiDescription = v)),
                     child: Container(
@@ -318,7 +320,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
                                 children: [
                                   const Icon(Icons.g_translate_rounded, size: 16, color: CraftTheme.violetTint),
                                   const SizedBox(width: 6),
-                                  Text("विवरण (Regional Description)", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.bold, color: CraftTheme.violetTint)),
+                                  Text("विवरण - हिंदी/क्षेत्रीय (ONDC & GeM Portals)", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.bold, color: CraftTheme.violetTint)),
                                 ],
                               ),
                               const Icon(Icons.edit_outlined, size: 16, color: CraftTheme.violetTint),
