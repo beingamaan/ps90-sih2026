@@ -11,6 +11,7 @@ import '../models/trust_claim.dart';
 import '../models/catalogue.dart';
 import '../widgets/responsive_container.dart';
 import '../widgets/product_facts_review_widget.dart';
+import '../widgets/step_progress_bar.dart';
 import 'pricing_screen.dart';
 
 class VoiceScreen extends StatefulWidget {
@@ -221,6 +222,9 @@ class _VoiceScreenState extends State<VoiceScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const StepProgressBar(currentStep: 2),
+                const SizedBox(height: 16),
+
                 _buildVoiceInputBar(),
                 const SizedBox(height: 16),
 
