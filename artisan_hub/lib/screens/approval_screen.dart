@@ -4,6 +4,7 @@ import '../theme.dart';
 import '../api_service.dart';
 import '../providers/product_draft_provider.dart';
 import '../models/product_facts.dart';
+import '../models/fulfilment_profile.dart';
 import '../widgets/responsive_container.dart';
 import '../widgets/step_progress_bar.dart';
 import '../widgets/craft_buttons.dart';
@@ -258,6 +259,67 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
                               const SizedBox(height: 12),
                               const Divider(height: 1),
                               const SizedBox(height: 10),
+
+                              // Phase 3.2 Order Readiness Summary Section
+                              Builder(
+                                builder: (_) {
+                                  FulfilmentProfile fulfilment = const FulfilmentProfile();
+                                  try {
+                                    fulfilment = ProductDraftProvider.of(context, listen: false).currentDraft.fulfilment;
+                                  } catch (_) {}
+
+                                  final readinessState = fulfilment.readinessState;
+                                  final readinessScore = fulfilment.readinessScore;
+
+                                  Color badgeBg = CraftTheme.greenLight;
+                                  Color badgeFg = CraftTheme.greenTint;
+                                  if (readinessState == 'CONDITIONAL') {
+                                    badgeBg = CraftTheme.amberLight;
+                                    badgeFg = CraftTheme.amberTint;
+                                  } else if (readinessState == 'NEEDS PREPARATION') {
+                                    badgeBg = CraftTheme.coralLight;
+                                    badgeFg = CraftTheme.coralTint;
+                                  }
+
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            "ORDER READINESS",
+                                            style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.mutedText, letterSpacing: 0.8),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(999)),
+                                            child: Text(
+                                              "$readinessState • $readinessScore/100",
+                                              style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: badgeFg),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "Stock: ${fulfilment.stockStatus} | Prep time: ${fulfilment.leadTimeDays} days | Dispatch: ${fulfilment.dispatchStatus}",
+                                        style: GoogleFonts.notoSans(fontSize: 11, color: CraftTheme.darkText),
+                                      ),
+                                      if (fulfilment.sellerNote.isNotEmpty) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          "Note: ${fulfilment.sellerNote}",
+                                          style: GoogleFonts.notoSans(fontSize: 10, fontStyle: FontStyle.italic, color: CraftTheme.mutedText),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 10),
+                                      const Divider(height: 1),
+                                      const SizedBox(height: 10),
+                                    ],
+                                  );
+                                },
+                              ),
 
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

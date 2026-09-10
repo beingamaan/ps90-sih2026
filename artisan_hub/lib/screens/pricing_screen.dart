@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import '../api_service.dart';
+import '../models/fulfilment_profile.dart';
+import '../providers/product_draft_provider.dart';
 import '../widgets/responsive_container.dart';
 import '../widgets/step_progress_bar.dart';
 import '../widgets/craft_buttons.dart';
+import '../widgets/order_readiness_widget.dart';
 import 'approval_screen.dart';
 
 class PricingScreen extends StatefulWidget {
@@ -35,6 +38,7 @@ class _PricingScreenState extends State<PricingScreen> {
 
   bool _isLoading = false;
   Map<String, dynamic>? _priceResult;
+  FulfilmentProfile _fulfilment = const FulfilmentProfile();
 
   @override
   void initState() {
@@ -362,13 +366,28 @@ class _PricingScreenState extends State<PricingScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
+
+                    // Phase 3.2 Order Readiness Layer
+                    OrderReadinessWidget(
+                      profile: _fulfilment,
+                      onProfileChanged: (newProfile) {
+                        setState(() => _fulfilment = newProfile);
+                        try {
+                          ProductDraftProvider.of(context, listen: false).updateFulfilment(newProfile);
+                        } catch (_) {}
+                      },
+                    ),
+                    const SizedBox(height: 28),
 
                     // Continue to Approval Button
                     CraftPrimaryButton(
                       label: "PROCEED TO APPROVAL →",
                       icon: Icons.verified_user_rounded,
                       onPressed: () {
+                        try {
+                          ProductDraftProvider.of(context, listen: false).updateFulfilment(_fulfilment);
+                        } catch (_) {}
                         Navigator.push(
                           context,
                           MaterialPageRoute(
