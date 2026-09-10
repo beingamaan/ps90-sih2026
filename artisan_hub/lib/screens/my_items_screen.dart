@@ -57,8 +57,8 @@ class _MyItemsScreenState extends State<MyItemsScreen> with SingleTickerProvider
           indicatorColor: CraftTheme.terracottaPrimary,
           indicatorWeight: 3,
           tabs: [
-            Tab(text: "Catalog (${_products.length})"),
-            const Tab(text: "Orders & Enquiries (0)"),
+            Tab(text: "Catalogue Items (${_products.length})"),
+            const Tab(text: "Channel Enquiries (0)"),
           ],
         ),
       ),

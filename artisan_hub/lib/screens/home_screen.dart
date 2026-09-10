@@ -58,15 +58,19 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Header: Brand Identity & Subtitle
+                  // 1. Header: Brand Identity & Positioning
                   _buildHeader(context),
                   const SizedBox(height: 16),
 
                   // 2. Primary Hero Action Card: CREATE PRODUCT (Visually Dominant)
                   _buildCreateProductHeroCard(context),
+                  const SizedBox(height: 16),
+
+                  // 3. Real Catalogue Progress
+                  _buildRealCatalogueSummaryCard(),
                   const SizedBox(height: 20),
 
-                  // 3. Seller Readiness Journey Bar
+                  // 4. Seller Readiness Journey Bar
                   Text(
                     "SELLER READINESS JOURNEY",
                     style: GoogleFonts.notoSans(
@@ -80,19 +84,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   const StepProgressBar(currentStep: 1),
                   const SizedBox(height: 24),
 
-                  // 4. YOUR WORK / CONTINUE DRAFT
+                  // 5. YOUR WORK / CONTINUE DRAFT
                   _buildActiveWorkSection(context, hasActiveDraft, activeDraft),
                   const SizedBox(height: 24),
 
-                  // 5. MY PRODUCTS (Real SQLite Data)
+                  // 6. MY PRODUCTS (Real Data)
                   _buildMyProductsSection(context),
                   const SizedBox(height: 24),
 
-                  // 6. COMPACT MANAGEMENT SHORTCUTS
+                  // 7. COMPACT MANAGEMENT SHORTCUTS
                   _buildCompactShortcutsSection(context),
                   const SizedBox(height: 20),
 
-                  // 7. Craft Categories Quick Filters
+                  // 8. Why CraftBridge Thesis Pillars
+                  _buildWhyCraftBridgeSection(),
+                  const SizedBox(height: 20),
+
+                  // 9. Craft Categories Quick Filters
                   _buildCraftCategoriesRow(context),
                   const SizedBox(height: 16),
                 ],
@@ -688,6 +696,122 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRealCatalogueSummaryCard() {
+    int approvedCount = 0;
+    int needsActionCount = 0;
+
+    for (var item in _realProducts) {
+      final status = (item["status"] ?? "").toString();
+      if (status.contains("Approved") || status.contains("Ready")) {
+        approvedCount++;
+      } else {
+        needsActionCount++;
+      }
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: CraftTheme.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CraftTheme.borderLight),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildSummaryItem("Total Products", "${_realProducts.length}", CraftTheme.darkText),
+          Container(width: 1, height: 28, color: CraftTheme.borderLight),
+          _buildSummaryItem("Seller Approved", "$approvedCount", CraftTheme.greenTint),
+          Container(width: 1, height: 28, color: CraftTheme.borderLight),
+          _buildSummaryItem("Needs Action", "$needsActionCount", CraftTheme.amberTint),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(value, style: GoogleFonts.notoSans(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+        const SizedBox(height: 2),
+        Text(label, style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.w600, color: CraftTheme.mutedText)),
+      ],
+    );
+  }
+
+  Widget _buildWhyCraftBridgeSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "WHY CRAFTBRIDGE?",
+          style: GoogleFonts.notoSans(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: CraftTheme.mutedText,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _buildPillarCard(
+                "VOICE-FIRST",
+                "Describe craft naturally",
+                Icons.mic_rounded,
+                CraftTheme.violetTint,
+                CraftTheme.violetLight,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildPillarCard(
+                "TRUST-AWARE",
+                "Seller reviews AI facts",
+                Icons.verified_user_rounded,
+                CraftTheme.tealTint,
+                CraftTheme.tealLight,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildPillarCard(
+                "ORDER-READY",
+                "Declare operational info",
+                Icons.inventory_2_rounded,
+                CraftTheme.amberTint,
+                CraftTheme.amberLight,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPillarCard(String title, String subtitle, IconData icon, Color color, Color bg) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 6),
+          Text(title, style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+          const SizedBox(height: 2),
+          Text(subtitle, style: GoogleFonts.notoSans(fontSize: 9, color: CraftTheme.darkText, height: 1.2)),
+        ],
+      ),
     );
   }
 

@@ -185,6 +185,41 @@ class _CameraScreenState extends State<CameraScreen> {
           "Take a clean photo of your craft. The original photo is always preserved.",
           style: GoogleFonts.notoSans(fontSize: 13, color: CraftTheme.mutedText),
         ),
+        const SizedBox(height: 14),
+
+        // Photo Guidance Card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: CraftTheme.cardSurface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: CraftTheme.borderLight),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "BETTER PRODUCT PHOTOS",
+                style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.terracottaPrimary, letterSpacing: 0.8),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(child: Text("✓ Good lighting", style: GoogleFonts.notoSans(fontSize: 11, color: CraftTheme.darkText))),
+                  Expanded(child: Text("✓ Product clearly visible", style: GoogleFonts.notoSans(fontSize: 11, color: CraftTheme.darkText))),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(child: Text("✓ Simple background", style: GoogleFonts.notoSans(fontSize: 11, color: CraftTheme.darkText))),
+                  Expanded(child: Text("✓ Show full product", style: GoogleFonts.notoSans(fontSize: 11, color: CraftTheme.darkText))),
+                ],
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
 
         GestureDetector(
@@ -324,9 +359,33 @@ class _CameraScreenState extends State<CameraScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2, color: CraftTheme.tealTint),
                   ),
                   const SizedBox(width: 8),
-                  Text("Enhancing…", style: GoogleFonts.notoSans(fontSize: 12, color: CraftTheme.tealTint)),
+                  Text("Processing…", style: GoogleFonts.notoSans(fontSize: 12, color: CraftTheme.tealTint)),
                 ],
               ),
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        // Truthful Photo Status Chips
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: CraftTheme.greenLight, borderRadius: BorderRadius.circular(6)),
+              child: Text("Photo Added", style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.greenTint)),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: CraftTheme.tealLight, borderRadius: BorderRadius.circular(6)),
+              child: Text("Enhancement Available", style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.tealTint)),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: CraftTheme.blueLight, borderRadius: BorderRadius.circular(6)),
+              child: Text("Ready for Catalogue", style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.blueTint)),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -516,8 +575,8 @@ class _CameraScreenState extends State<CameraScreen> {
               elevation: 2,
             ),
             child: Text(
-              "USE THIS PHOTO →",
-              style: GoogleFonts.notoSans(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5),
+              "CONTINUE TO DESCRIPTION →",
+              style: GoogleFonts.notoSans(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5),
             ),
           ),
         ),
