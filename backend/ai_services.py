@@ -163,17 +163,27 @@ def generate_listing(transcript: str, category: str = "Textile", target_lang: st
     if not clean_transcript:
         clean_transcript = f"{category} Craft"
 
-    kb = CRAFT_KNOWLEDGE_BASE.get(category, CRAFT_KNOWLEDGE_BASE["General"])
+    # Auto-detect craft category if transcript contains category indicators
+    lower_t = clean_transcript.lower()
+    detected_category = category
+    if any(k in lower_t for k in ["clay", "terracotta", "matka", "pot", "vase", "bowl", "glazed", "kulhad", "ceramic"]):
+        detected_category = "Pottery"
+    elif any(k in lower_t for k in ["saree", "silk", "woven", "handloom", "dupatta", "cotton", "ikat", "chanderi", "zari", "cloth", "textile"]):
+        detected_category = "Textile"
+    elif any(k in lower_t for k in ["wood", "teak", "carved", "wooden", "spice box", "sculpture", "furniture"]):
+        detected_category = "Woodwork"
+    elif any(k in lower_t for k in ["brass", "copper", "metal", "bronze", "hammered", "bell", "utensil"]):
+        detected_category = "Metalware"
+    elif any(k in lower_t for k in ["jewelry", "necklace", "beads", "silver", "pendant", "bangle", "ring"]):
+        detected_category = "Jewelry"
+
+    kb = CRAFT_KNOWLEDGE_BASE.get(detected_category, CRAFT_KNOWLEDGE_BASE["General"])
 
     # Extract keywords for dynamic title & tags
     words = [w.strip(",.!?").title() for w in clean_transcript.split() if len(w) > 2]
     keywords = [w for w in words if w.lower() not in ["with", "from", "and", "the", "for", "made", "this", "that"]]
     
-    unique_tags = list(dict.fromkeys(keywords + [category, "Handmade", "Eco-Friendly"]))[:4]
-
-    # Craft authentic fallback title
-    title_words = " ".join(keywords[:5]) if keywords else clean_transcript
-    fallback_title = f"{kb['title_prefix']} {title_words}".title()
+    unique_tags = list(dict.fromkeys(keywords + [detected_category, "Handmade", "Eco-Friendly"]))[:4]
 
     # Direct, un-embellished description matching the user's input strictly
     clean_sentence = clean_transcript.capitalize()
@@ -189,6 +199,26 @@ def generate_listing(transcript: str, category: str = "Textile", target_lang: st
     short_item = clean_transcript if len(clean_transcript) < 35 else clean_transcript[:32] + "..."
     dynamic_maker_story = f"Handcrafted by local artisans preserving traditional craftsmanship to create this {short_item}."
 
+    # PS90 Feature Extraction Defaults
+    material = "Natural Eco-Friendly Craft Material"
+    if "silk" in lower_t: material = "Pure Handloom Silk"
+    elif "cotton" in lower_t: material = "Organic Handloom Cotton"
+    elif "clay" in lower_t or "terracotta" in lower_t: material = "Riverbank Terracotta Clay"
+    elif "wood" in lower_t or "teak" in lower_t: material = "Seasoned Solid Wood"
+    elif "brass" in lower_t: material = "Artisanal Brass"
+    elif "copper" in lower_t: material = "Hand-Hammered Copper"
+
+    color_motif = "Traditional Indian Art Motif"
+    if "blue" in lower_t: color_motif = "Indigo Blue Accent & Engravings"
+    elif "red" in lower_t: color_motif = "Crimson Red Border"
+    elif "gold" in lower_t or "zari" in lower_t: color_motif = "Gold Zari Weave & Engravings"
+    elif "floral" in lower_t: color_motif = "Hand-Carved Floral Motifs"
+
+    origin = "Heritage Artisan Cluster, India"
+    if "chanderi" in lower_t: origin = "Chanderi Craft Village, MP"
+    elif "pochampally" in lower_t or "ikat" in lower_t: origin = "Pochampally Cluster, Telangana"
+    elif "khurja" in lower_t: origin = "Khurja Pottery Center, UP"
+
     fallback_listing = {
         "title": clean_transcript.title()[:55],
         "description": fallback_desc,
@@ -196,6 +226,10 @@ def generate_listing(transcript: str, category: str = "Textile", target_lang: st
         "hindi_description": fallback_regional,
         "tags": unique_tags,
         "maker_story": dynamic_maker_story,
+        "category": detected_category,
+        "material": material,
+        "color_motif": color_motif,
+        "origin": origin,
         "status": "success"
     }
 
@@ -205,7 +239,7 @@ def generate_listing(transcript: str, category: str = "Textile", target_lang: st
             client = genai.Client(api_key=GEMINI_API_KEY)
             prompt = f"""
             You are CraftBridge AI — an expert e-commerce cataloger assisting an artisan.
-            Given the artisan's exact input description: "{clean_transcript}" (Category: {category}, Target Regional Language: {target_lang}):
+            Given the artisan's exact input description: "{clean_transcript}" (Category: {detected_category}, Target Regional Language: {target_lang}):
 
             CRITICAL REQUIREMENT: Do NOT add exaggerated adjectives or invented fluff (such as "masterfully handwoven", "intricate ethnic patterns", "royal heritage") unless the artisan explicitly mentioned them. Stay strictly faithful to what the artisan stated in "{clean_transcript}".
 
@@ -215,6 +249,10 @@ def generate_listing(transcript: str, category: str = "Textile", target_lang: st
             - regional_description: Direct, accurate translation of "{clean_transcript}" in the target language code '{target_lang}' (e.g. Hindi in Devanagari script).
             - tags: Array of 4 relevant search tags directly related to "{clean_transcript}".
             - maker_story: Simple 2-sentence story about crafting this item ("{clean_transcript}").
+            - category: Craft category (Textiles, Pottery, Woodwork, Metalware, Jewelry).
+            - material: Extracted primary material (e.g. Pure Silk, Terracotta Clay).
+            - color_motif: Extracted color/motif (e.g. Blue Floral).
+            - origin: Craft cluster origin (e.g. Chanderi, MP).
 
             Return STRICTLY valid JSON without markdown codeblock formatting.
             """
@@ -239,6 +277,10 @@ def generate_listing(transcript: str, category: str = "Textile", target_lang: st
                 "hindi_description": reg,
                 "tags": data.get("tags", fallback_listing["tags"]),
                 "maker_story": data.get("maker_story", dynamic_maker_story),
+                "category": data.get("category", detected_category),
+                "material": data.get("material", material),
+                "color_motif": data.get("color_motif", color_motif),
+                "origin": data.get("origin", origin),
                 "status": "live_ai"
             }
         except Exception as e:

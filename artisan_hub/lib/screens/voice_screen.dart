@@ -30,6 +30,11 @@ class _VoiceScreenState extends State<VoiceScreen> {
   List<String> _tags = ["Handloom", "Textile", "Zari", "Festive"];
   String _makerStory = "Woven by 3rd generation master weavers from Chanderi village, keeping traditional handloom art alive.";
 
+  String _category = "Textile";
+  String _material = "Pure Handloom Silk";
+  String _colorMotif = "Gold Zari & Floral Motifs";
+  String _origin = "Chanderi Weaving Village, MP";
+
   int _selectedLangIndex = 0;
   final List<Map<String, String>> _languages = [
     {"name": "हिंदी (Hindi)", "code": "hi", "locale": "hi-IN", "label": "Hindi"},
@@ -98,7 +103,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
   Future<void> _fetchAiListing(String text) async {
     setState(() => _isLoading = true);
     final langObj = _languages[_selectedLangIndex];
-    final data = await ApiService.generateListing(text, "Textile", targetLang: langObj["code"]!);
+    final data = await ApiService.generateListing(text, _category, targetLang: langObj["code"]!);
     setState(() {
       _title = data["title"] ?? _title;
       _description = data["description"] ?? _description;
@@ -107,6 +112,10 @@ class _VoiceScreenState extends State<VoiceScreen> {
         _tags = List<String>.from(data["tags"]);
       }
       _makerStory = data["maker_story"] ?? _makerStory;
+      _category = data["category"] ?? _category;
+      _material = data["material"] ?? _material;
+      _colorMotif = data["color_motif"] ?? _colorMotif;
+      _origin = data["origin"] ?? _origin;
       _isLoading = false;
     });
   }
@@ -255,6 +264,10 @@ class _VoiceScreenState extends State<VoiceScreen> {
                   ),
                   const SizedBox(height: 20),
 
+                  // 4b. PS90 Extracted Craft Specifications Grid
+                  _buildCraftSpecificationsCard(),
+                  const SizedBox(height: 20),
+
                   // 5. Description Block (Tap to edit)
                   GestureDetector(
                     onTap: () => _editFieldDialog("Description", _description, (v) => setState(() => _description = v)),
@@ -305,7 +318,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
                                 children: [
                                   const Icon(Icons.g_translate_rounded, size: 16, color: CraftTheme.violetTint),
                                   const SizedBox(width: 6),
-                                  Text("विवरण (Hindi Description)", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.bold, color: CraftTheme.violetTint)),
+                                  Text("विवरण (Regional Description)", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.bold, color: CraftTheme.violetTint)),
                                 ],
                               ),
                               const Icon(Icons.edit_outlined, size: 16, color: CraftTheme.violetTint),
@@ -364,7 +377,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
                               description: _description,
                               tags: _tags,
                               makerStory: _makerStory,
-                              category: "Textile",
+                              category: _category,
                             ),
                           ),
                         );
@@ -384,6 +397,76 @@ class _VoiceScreenState extends State<VoiceScreen> {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCraftSpecificationsCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: CraftTheme.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CraftTheme.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.tune_rounded, size: 16, color: CraftTheme.terracottaPrimary),
+              const SizedBox(width: 6),
+              Text(
+                "Extracted Craft Attributes (शिल्प विशेषताएं)",
+                style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _buildSpecChip("CATEGORY", _category, Icons.category_rounded, CraftTheme.violetTint, CraftTheme.violetLight)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildSpecChip("MATERIAL", _material, Icons.interests_rounded, CraftTheme.tealTint, CraftTheme.tealLight)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: _buildSpecChip("MOTIF / COLOR", _colorMotif, Icons.palette_rounded, CraftTheme.terracottaPrimary, CraftTheme.terracottaLight)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildSpecChip("GI ORIGIN", _origin, Icons.location_on_rounded, CraftTheme.blueTint, CraftTheme.blueLight)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpecChip(String label, String val, IconData icon, Color color, Color bg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: GoogleFonts.notoSans(fontSize: 9, fontWeight: FontWeight.bold, color: color, letterSpacing: 0.5)),
+          const SizedBox(height: 3),
+          Row(
+            children: [
+              Icon(icon, size: 12, color: color),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(val, style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.darkText), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+            ],
           ),
         ],
       ),
