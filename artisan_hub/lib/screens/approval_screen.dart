@@ -137,7 +137,7 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const StepProgressBar(currentStep: 6),
+                  const StepProgressBar(currentStep: 5),
                   const SizedBox(height: 20),
 
                   if (!_isSuccess) ...[
