@@ -12,7 +12,9 @@ import '../models/catalogue.dart';
 import '../widgets/responsive_container.dart';
 import '../widgets/product_facts_review_widget.dart';
 import '../widgets/step_progress_bar.dart';
+import '../widgets/craft_buttons.dart';
 import 'pricing_screen.dart';
+import 'home_screen.dart';
 
 class VoiceScreen extends StatefulWidget {
   final String? initialTranscript;
@@ -63,6 +65,8 @@ class _VoiceScreenState extends State<VoiceScreen> {
     {"name": "मराठी (Marathi)", "code": "mr", "locale": "mr-IN", "label": "Marathi"},
     {"name": "English", "code": "en", "locale": "en-IN", "label": "English"},
   ];
+
+  String? _activePromptHint;
 
   @override
   void initState() {
@@ -202,248 +206,45 @@ class _VoiceScreenState extends State<VoiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width > 900;
+
     return Scaffold(
       backgroundColor: CraftTheme.creamBase,
-      appBar: AppBar(
-        backgroundColor: CraftTheme.creamBase,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: CraftTheme.darkText),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          "Step 2: Voice Cataloger AI",
-          style: GoogleFonts.notoSans(fontSize: 18, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
-        ),
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: ResponsiveContainer(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const StepProgressBar(currentStep: 2),
-                const SizedBox(height: 16),
-
-                _buildVoiceInputBar(),
-                const SizedBox(height: 16),
-
-                _buildLanguageSelectorChips(),
-                const SizedBox(height: 20),
-
-                if (_isLoading) ...[
-                  const Center(child: CircularProgressIndicator(color: CraftTheme.violetTint)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. HEADER
+                  _buildHeader(context),
                   const SizedBox(height: 20),
-                ],
 
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: CraftTheme.violetLight,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.auto_awesome_rounded, color: CraftTheme.violetTint, size: 20),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "AI Listing Suggestions",
-                            style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
-                          ),
-                          Text(
-                            "AI suggestion — seller review required. Not independently verified.",
-                            style: GoogleFonts.notoSans(fontSize: 11, color: CraftTheme.mutedText),
-                          ),
-                        ],
-                      ),
-                    ),
+                  // 2. STEP PROGRESS BAR (Step 2 Active)
+                  const StepProgressBar(currentStep: 2),
+                  const SizedBox(height: 24),
+
+                  // 3. MAIN EDITORIAL CONTENT
+                  if (isDesktop)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 5, child: _buildHeroVoicePanel()),
+                        const SizedBox(width: 24),
+                        Expanded(flex: 7, child: _buildRightContentColumn()),
+                      ],
+                    )
+                  else ...[
+                    _buildHeroVoicePanel(),
+                    const SizedBox(height: 24),
+                    _buildRightContentColumn(),
                   ],
-                ),
-                const SizedBox(height: 14),
 
-                _buildAudioPlaybackBar(),
-                const SizedBox(height: 18),
-
-                GestureDetector(
-                  onTap: () => _editFieldDialog("Title", _title, (v) => setState(() => _title = v)),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _title,
-                          style: GoogleFonts.notoSans(fontSize: 22, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
-                        ),
-                      ),
-                      const Icon(Icons.edit_outlined, size: 18, color: CraftTheme.mutedText),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                Text("Search Tags:", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.bold, color: CraftTheme.mutedText)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: List.generate(_tags.length, (i) => CraftTheme.tagChip(_tags[i], i)),
-                ),
-                const SizedBox(height: 18),
-
-                ProductFactsReviewWidget(
-                  facts: _facts,
-                  trustClaims: _trustClaims,
-                  onFactsChanged: (newFacts) {
-                    setState(() {
-                      _facts = newFacts;
-                      _category = newFacts.category;
-                      _material = newFacts.material;
-                      _colorMotif = newFacts.colorMotif;
-                      _origin = newFacts.origin;
-                    });
-                    try {
-                      ProductDraftProvider.of(context, listen: false).updateFacts(newFacts);
-                    } catch (_) {}
-                  },
-                  onTrustClaimsChanged: (newClaims) {
-                    setState(() {
-                      _trustClaims = newClaims;
-                    });
-                    try {
-                      ProductDraftProvider.of(context, listen: false).updateTrustClaims(newClaims);
-                    } catch (_) {}
-                  },
-                ),
-                const SizedBox(height: 18),
-
-                GestureDetector(
-                  onTap: () => _editFieldDialog("English Description", _description, (v) => setState(() => _description = v)),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: CraftTheme.cardSurface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: CraftTheme.borderLight),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Product Description (English)", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.bold, color: CraftTheme.mutedText)),
-                            const Icon(Icons.edit_outlined, size: 16, color: CraftTheme.mutedText),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(_description, style: GoogleFonts.notoSans(fontSize: 14, height: 1.5, color: CraftTheme.darkText)),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                GestureDetector(
-                  onTap: () => _editFieldDialog("विवरण (Regional)", _hindiDescription, (v) => setState(() => _hindiDescription = v)),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: CraftTheme.violetLight.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: CraftTheme.violetTint.withValues(alpha: 0.3), width: 1.5),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.g_translate_rounded, size: 16, color: CraftTheme.violetTint),
-                                const SizedBox(width: 6),
-                                Text("विवरण - क्षेत्रीय भाषा (Regional Description)", style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.bold, color: CraftTheme.violetTint)),
-                              ],
-                            ),
-                            const Icon(Icons.edit_outlined, size: 16, color: CraftTheme.violetTint),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _hindiDescription,
-                          style: GoogleFonts.notoSansDevanagari(fontSize: 15, height: 1.5, fontWeight: FontWeight.w600, color: CraftTheme.darkText),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: CraftTheme.coralLight,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: CraftTheme.coralTint.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.local_florist_rounded, color: CraftTheme.coralTint, size: 22),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("MAKER STORY", style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.coralTint, letterSpacing: 0.8)),
-                            const SizedBox(height: 4),
-                            Text(_makerStory, style: GoogleFonts.notoSans(fontSize: 13, height: 1.4, color: CraftTheme.darkText)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PricingScreen(
-                            title: _title,
-                            description: _description,
-                            tags: _tags,
-                            makerStory: _makerStory,
-                            category: _category,
-                          ),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: CraftTheme.terracottaPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                      elevation: 2,
-                    ),
-                    child: Text(
-                      "PROCEED TO PRICING →",
-                      style: GoogleFonts.notoSans(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.8),
-                    ),
-                  ),
-                ),
-              ],
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
           ),
         ),
@@ -451,15 +252,306 @@ class _VoiceScreenState extends State<VoiceScreen> {
     );
   }
 
+  // ─── 1. TOP HEADER ────────────────────────────────────
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: CraftTheme.violetLight,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.mic_rounded, color: CraftTheme.violetTint, size: 22),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "CraftBridge",
+                  style: GoogleFonts.notoSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: CraftTheme.darkText,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                Text(
+                  "CREATE PRODUCT",
+                  style: GoogleFonts.notoSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: CraftTheme.violetTint,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        TextButton.icon(
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const HomeScreen()),
+            );
+          },
+          icon: const Icon(Icons.arrow_forward_rounded, size: 16, color: CraftTheme.terracottaPrimary),
+          label: Text(
+            "Skip to Workspace →",
+            style: GoogleFonts.notoSans(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: CraftTheme.terracottaPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
-
-  Widget _buildVoiceInputBar() {
+  // ─── 2. HERO VOICE PANEL ──────────────────────────────
+  Widget _buildHeroVoicePanel() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: CraftTheme.cardSurface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: CraftTheme.borderLight, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Voice Storytelling Box
+          Container(
+            height: 240,
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: CraftTheme.violetLight,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: CraftTheme.violetTint.withValues(alpha: 0.3), width: 1.5),
+            ),
+            child: Stack(
+              children: [
+                // Static Waveform Motif Graphics
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      18,
+                      (i) => Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                        width: 4,
+                        height: 20.0 + ((i % 4 == 0) ? 60 : (i % 3 == 0) ? 40 : (i % 2 == 0) ? 80 : 15),
+                        decoration: BoxDecoration(
+                          color: CraftTheme.violetTint.withValues(alpha: _isListening ? 0.9 : 0.35),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Center Mic Icon
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: _isListening ? CraftTheme.terracottaPrimary : CraftTheme.violetTint,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: (_isListening ? CraftTheme.terracottaPrimary : CraftTheme.violetTint).withValues(alpha: 0.35),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Icon(Icons.mic_rounded, color: Colors.white, size: 36),
+                  ),
+                ),
+
+                // Prompt Bubbles Overlay
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: _buildPromptBubble("Materials?"),
+                ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: _buildPromptBubble("How is it made?"),
+                ),
+                Positioned(
+                  bottom: 10,
+                  left: 10,
+                  child: _buildPromptBubble("Where is it from?"),
+                ),
+                Positioned(
+                  bottom: 10,
+                  right: 10,
+                  child: _buildPromptBubble("What makes it special?"),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          Text(
+            "VOICE STORYTELLING",
+            style: GoogleFonts.notoSans(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: CraftTheme.violetTint,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Speak naturally in your native language. No technical terms required.",
+            textAlign: TextAlign.center,
+            style: GoogleFonts.notoSans(fontSize: 12, color: CraftTheme.mutedText),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromptBubble(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: CraftTheme.cardSurface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: CraftTheme.borderLight),
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.chat_bubble_outline_rounded, size: 12, color: CraftTheme.violetTint),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: GoogleFonts.notoSans(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: CraftTheme.darkText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── 3. RIGHT CONTENT COLUMN ──────────────────────────
+  Widget _buildRightContentColumn() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // STEP LABEL & HEADINGS
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: CraftTheme.violetLight,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            "STEP 2 OF 5 • DESCRIBE",
+            style: GoogleFonts.notoSans(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: CraftTheme.violetTint,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        Text(
+          "Speak naturally about your craft",
+          style: GoogleFonts.notoSans(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: CraftTheme.darkText,
+            height: 1.25,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        Text(
+          "Describe materials, techniques, origin, and your craft story in your natural language.",
+          style: GoogleFonts.notoSans(
+            fontSize: 14,
+            height: 1.5,
+            color: CraftTheme.mutedText,
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // VOICE INPUT BAR & LANGUAGE CHIPS
+        _buildVoiceInputBar(),
+        const SizedBox(height: 14),
+
+        _buildLanguageSelectorChips(),
+        const SizedBox(height: 20),
+
+        // TELL YOUR STORY CARD
+        _buildTellYourStoryCard(),
+        const SizedBox(height: 20),
+
+        // GUIDED PROMPTS
+        _buildGuidedPromptsSection(),
+        const SizedBox(height: 20),
+
+        // TRUST BANNER
+        _buildTrustBanner(),
+        const SizedBox(height: 20),
+
+        // EXAMPLE CARD
+        _buildExampleCard(),
+        const SizedBox(height: 24),
+
+        // AUDIO READBACK BAR
+        _buildAudioPlaybackBar(),
+        const SizedBox(height: 20),
+
+        if (_isLoading) ...[
+          const Center(child: CircularProgressIndicator(color: CraftTheme.violetTint)),
+          const SizedBox(height: 20),
+        ],
+
+        // EDITABLE STORY & TITLE PREVIEW
+        _buildEditableListingFields(),
+        const SizedBox(height: 24),
+
+        // ACTIONS AREA
+        _buildActionButtons(),
+      ],
+    );
+  }
+
+  // ─── VOICE INPUT BAR ──────────────────────────────────
+  Widget _buildVoiceInputBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: CraftTheme.cardSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: CraftTheme.violetTint.withValues(alpha: 0.4), width: 1.5),
       ),
       child: Row(
         children: [
@@ -468,10 +560,16 @@ class _VoiceScreenState extends State<VoiceScreen> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _isListening ? CraftTheme.terracottaPrimary : CraftTheme.violetLight,
+                color: _isListening ? CraftTheme.terracottaPrimary : CraftTheme.violetTint,
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: (_isListening ? CraftTheme.terracottaPrimary : CraftTheme.violetTint).withValues(alpha: 0.3),
+                    blurRadius: 8,
+                  ),
+                ],
               ),
-              child: Icon(Icons.mic_rounded, color: _isListening ? Colors.white : CraftTheme.violetTint, size: 24),
+              child: Icon(Icons.mic_rounded, color: Colors.white, size: 24),
             ),
           ),
           const SizedBox(width: 14),
@@ -480,11 +578,22 @@ class _VoiceScreenState extends State<VoiceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isListening ? "Listening… (LISTEN State)" : "Tap mic to describe product in your language",
-                  style: GoogleFonts.notoSans(fontSize: 14, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+                  _isListening ? "Listening… (Speak freely now)" : "DESCRIBE BY VOICE",
+                  style: GoogleFonts.notoSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: _isListening ? CraftTheme.terracottaPrimary : CraftTheme.violetTint,
+                  ),
                 ),
-                if (_transcript.isNotEmpty)
-                  Text(_transcript, style: GoogleFonts.notoSans(fontSize: 12, color: CraftTheme.mutedText), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(
+                  _transcript.isNotEmpty ? _transcript : "Tap mic to speak about your craft in your language",
+                  style: GoogleFonts.notoSans(
+                    fontSize: 12,
+                    color: _transcript.isNotEmpty ? CraftTheme.darkText : CraftTheme.mutedText,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
@@ -493,56 +602,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
     );
   }
 
-  Widget _buildAudioPlaybackBar() {
-    return GestureDetector(
-      onTap: _speakListing,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: CraftTheme.violetLight,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: const BoxDecoration(
-                color: CraftTheme.violetTint,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(_isPlayingAudio ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Listen Audio Readback (${_languages[_selectedLangIndex]['name']})", style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.bold, color: CraftTheme.violetTint)),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: List.generate(
-                      14,
-                      (i) => Container(
-                        margin: const EdgeInsets.only(right: 3),
-                        width: 3,
-                        height: 6.0 + ((i % 3 == 0) ? 10 : (i % 2 == 0) ? 14 : 4),
-                        decoration: BoxDecoration(
-                          color: CraftTheme.violetTint.withValues(alpha: _isPlayingAudio ? 0.9 : 0.4),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // ─── LANGUAGE SELECTOR CHIPS ──────────────────────────
   Widget _buildLanguageSelectorChips() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,7 +613,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
             const SizedBox(width: 6),
             Text(
               "Select Regional Language:",
-              style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+              style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
             ),
           ],
         ),
@@ -598,24 +658,488 @@ class _VoiceScreenState extends State<VoiceScreen> {
     );
   }
 
+  // ─── TELL YOUR STORY CARD ─────────────────────────────
+  Widget _buildTellYourStoryCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: CraftTheme.cardSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: CraftTheme.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded, size: 18, color: CraftTheme.violetTint),
+              const SizedBox(width: 8),
+              Text(
+                "TELL YOUR STORY",
+                style: GoogleFonts.notoSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: CraftTheme.violetTint,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              Expanded(child: _buildStoryInfoBlock("SPEAK FREELY", "Use your own words.", Icons.record_voice_over_outlined)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildStoryInfoBlock("NATURAL LANGUAGE", "No perfect wording required.", Icons.translate_rounded)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildStoryInfoBlock("AI STRUCTURES", "Helps structure facts.", Icons.data_object_rounded)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStoryInfoBlock(String title, String desc, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: CraftTheme.creamBase,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: CraftTheme.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: CraftTheme.violetTint),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            desc,
+            style: GoogleFonts.notoSans(fontSize: 10, color: CraftTheme.mutedText),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── GUIDED PROMPTS ───────────────────────────────────
+  Widget _buildGuidedPromptsSection() {
+    final prompts = [
+      {"label": "MATERIALS", "q": "What is it made from?", "hint": "e.g., Pure silk zari threads, organic dye..."},
+      {"label": "TECHNIQUE", "q": "How do you make it?", "hint": "e.g., Traditional pit loom weaving..."},
+      {"label": "ORIGIN", "q": "Where is it made?", "hint": "e.g., Chanderi artisan cluster, MP..."},
+      {"label": "STORY", "q": "What makes it special?", "hint": "e.g., Handcrafted by 3rd gen weavers..."},
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: CraftTheme.cardSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: CraftTheme.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "NOT SURE WHAT TO SAY?",
+            style: GoogleFonts.notoSans(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: CraftTheme.mutedText,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: prompts.map((p) {
+              final isSelected = _activePromptHint == p["hint"];
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _activePromptHint = isSelected ? null : p["hint"];
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? CraftTheme.violetTint : CraftTheme.violetLight,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? CraftTheme.violetTint : CraftTheme.violetTint.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        p["label"]!,
+                        style: GoogleFonts.notoSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? Colors.white : CraftTheme.violetTint,
+                        ),
+                      ),
+                      Text(
+                        p["q"]!,
+                        style: GoogleFonts.notoSans(
+                          fontSize: 11,
+                          color: isSelected ? Colors.white.withValues(alpha: 0.9) : CraftTheme.darkText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          if (_activePromptHint != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: CraftTheme.violetLight,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                "Prompt idea: \"$_activePromptHint\"",
+                style: GoogleFonts.notoSans(fontSize: 11, fontStyle: FontStyle.italic, color: CraftTheme.violetTint),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ─── TRUST BANNER ─────────────────────────────────────
+  Widget _buildTrustBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: CraftTheme.tealLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CraftTheme.tealTint.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.shield_outlined, color: CraftTheme.tealTint, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "AI SUGGESTS. YOU DECIDE.",
+                  style: GoogleFonts.notoSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: CraftTheme.tealTint,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "AI-generated product facts remain under seller review. You retain full control over your catalogue listing.",
+                  style: GoogleFonts.notoSans(fontSize: 12, color: CraftTheme.darkText, height: 1.4),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── EXAMPLE CARD ─────────────────────────────────────
+  Widget _buildExampleCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: CraftTheme.creamBase,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: CraftTheme.borderLight),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: CraftTheme.terracottaLight,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              "EXAMPLE",
+              style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.terracottaPrimary),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "\"Handwoven cotton basket, made in 3 days with natural dye...\"",
+              style: GoogleFonts.notoSans(fontSize: 12, fontStyle: FontStyle.italic, color: CraftTheme.mutedText),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── AUDIO PLAYBACK BAR ───────────────────────────────
+  Widget _buildAudioPlaybackBar() {
+    return GestureDetector(
+      onTap: _speakListing,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: CraftTheme.violetLight,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: CraftTheme.violetTint.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                color: CraftTheme.violetTint,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(_isPlayingAudio ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Listen Audio Readback (${_languages[_selectedLangIndex]['name']})",
+                    style: GoogleFonts.notoSans(fontSize: 12, fontWeight: FontWeight.bold, color: CraftTheme.violetTint),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: List.generate(
+                      14,
+                      (i) => Container(
+                        margin: const EdgeInsets.only(right: 3),
+                        width: 3,
+                        height: 6.0 + ((i % 3 == 0) ? 10 : (i % 2 == 0) ? 14 : 4),
+                        decoration: BoxDecoration(
+                          color: CraftTheme.violetTint.withValues(alpha: _isPlayingAudio ? 0.9 : 0.4),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── EDITABLE FIELDS PREVIEW ──────────────────────────
+  Widget _buildEditableListingFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => _editFieldDialog("Title", _title, (v) => setState(() => _title = v)),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: CraftTheme.cardSurface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: CraftTheme.borderLight),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Product Title", style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.mutedText)),
+                      const SizedBox(height: 4),
+                      Text(
+                        _title,
+                        style: GoogleFonts.notoSans(fontSize: 18, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.edit_outlined, size: 18, color: CraftTheme.mutedText),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Product Facts Review Widget Embedded
+        ProductFactsReviewWidget(
+          facts: _facts,
+          trustClaims: _trustClaims,
+          onFactsChanged: (newFacts) {
+            setState(() {
+              _facts = newFacts;
+              _category = newFacts.category;
+              _material = newFacts.material;
+              _colorMotif = newFacts.colorMotif;
+              _origin = newFacts.origin;
+            });
+            try {
+              ProductDraftProvider.of(context, listen: false).updateFacts(newFacts);
+            } catch (_) {}
+          },
+          onTrustClaimsChanged: (newClaims) {
+            setState(() {
+              _trustClaims = newClaims;
+            });
+            try {
+              ProductDraftProvider.of(context, listen: false).updateTrustClaims(newClaims);
+            } catch (_) {}
+          },
+        ),
+        const SizedBox(height: 12),
+
+        GestureDetector(
+          onTap: () => _editFieldDialog("English Description", _description, (v) => setState(() => _description = v)),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: CraftTheme.cardSurface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: CraftTheme.borderLight),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Product Description (English)", style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.mutedText)),
+                    const Icon(Icons.edit_outlined, size: 16, color: CraftTheme.mutedText),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(_description, style: GoogleFonts.notoSans(fontSize: 14, height: 1.5, color: CraftTheme.darkText)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        GestureDetector(
+          onTap: () => _editFieldDialog("विवरण (Regional)", _hindiDescription, (v) => setState(() => _hindiDescription = v)),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: CraftTheme.violetLight,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: CraftTheme.violetTint.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.g_translate_rounded, size: 16, color: CraftTheme.violetTint),
+                        const SizedBox(width: 6),
+                        Text("विवरण - क्षेत्रीय भाषा (Regional Description)", style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.violetTint)),
+                      ],
+                    ),
+                    const Icon(Icons.edit_outlined, size: 16, color: CraftTheme.violetTint),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _hindiDescription,
+                  style: GoogleFonts.notoSansDevanagari(fontSize: 14, height: 1.5, fontWeight: FontWeight.w600, color: CraftTheme.darkText),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── ACTIONS AREA ─────────────────────────────────────
+  Widget _buildActionButtons() {
+    return Column(
+      children: [
+        CraftPrimaryButton(
+          label: "CONTINUE TO REVIEW →",
+          icon: Icons.verified_user_rounded,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PricingScreen(
+                  title: _title,
+                  description: _description,
+                  tags: _tags,
+                  makerStory: _makerStory,
+                  category: _category,
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        CraftSecondaryButton(
+          label: "Change Photo / Retake",
+          icon: Icons.photo_camera_outlined,
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
+    );
+  }
+
   void _editFieldDialog(String label, String initialValue, Function(String) onSave) {
     final controller = TextEditingController(text: initialValue);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text("Edit $label"),
+        title: Text("Edit $label", style: GoogleFonts.notoSans(fontWeight: FontWeight.bold)),
         content: TextField(controller: controller, maxLines: 3),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: CraftTheme.terracottaPrimary),
             onPressed: () {
               onSave(controller.text);
               Navigator.pop(context);
             },
-            child: const Text("Save"),
+            child: const Text("Save", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 }
+

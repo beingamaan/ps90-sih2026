@@ -8,8 +8,11 @@ import '../theme.dart';
 import '../api_service.dart';
 import '../services/image_matting_service.dart';
 import '../widgets/responsive_container.dart';
+import '../widgets/step_progress_bar.dart';
+import '../widgets/craft_buttons.dart';
 import '../providers/product_draft_provider.dart';
 import 'voice_screen.dart';
+import 'home_screen.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -29,9 +32,9 @@ class _CameraScreenState extends State<CameraScreen> {
 
   final List<Map<String, dynamic>> _bgPresets = [
     {"name": "Clean White", "color": Colors.white},
-    {"name": "Studio Beige", "color": const Color(0xFFF7F3EE)},
+    {"name": "Studio Beige", "color": const Color(0xFFF7F3ED)},
     {"name": "Neutral Grey", "color": const Color(0xFFE8E8E8)},
-    {"name": "Craft Terracotta", "color": const Color(0xFFFBEBE8)},
+    {"name": "Clay Terracotta", "color": const Color(0xFFF6E4DC)},
   ];
 
   String _enhancementStatus = "AI Background Removal";
@@ -162,53 +165,45 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width > 900;
+
     return Scaffold(
       backgroundColor: CraftTheme.creamBase,
-      appBar: AppBar(
-        backgroundColor: CraftTheme.creamBase,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: CraftTheme.darkText),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
-                color: CraftTheme.tealLight,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.auto_awesome_rounded, color: CraftTheme.tealTint, size: 18),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              "Photo Studio Assistant",
-              style: GoogleFonts.notoSans(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: CraftTheme.darkText,
-              ),
-            ),
-          ],
-        ),
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: ResponsiveContainer(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_originalBytes == null) _buildPhotoPickerCards(),
-
-                if (_originalBytes != null) ...[
-                  _buildStudioComparison(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. HEADER
+                  _buildHeader(context),
                   const SizedBox(height: 20),
-                  _buildBackgroundPresetChips(),
+
+                  // 2. STEP PROGRESS BAR (Step 1 Active)
+                  const StepProgressBar(currentStep: 1),
                   const SizedBox(height: 24),
-                  _buildActionButtons(),
+
+                  // 3. MAIN EDITORIAL CONTENT
+                  if (isDesktop)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 5, child: _buildHeroPhotoStudioPanel()),
+                        const SizedBox(width: 24),
+                        Expanded(flex: 7, child: _buildRightContentColumn()),
+                      ],
+                    )
+                  else ...[
+                    _buildHeroPhotoStudioPanel(),
+                    const SizedBox(height: 24),
+                    _buildRightContentColumn(),
+                  ],
+
+                  const SizedBox(height: 32),
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -216,132 +211,616 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
-  Widget _buildPhotoPickerCards() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  // ─── 1. TOP HEADER ────────────────────────────────────
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          "Step 1: Capture or Upload Craft Photo",
-          style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          "Take a clean photo of your craft. The original photo is always preserved.",
-          style: GoogleFonts.notoSans(fontSize: 13, color: CraftTheme.mutedText),
-        ),
-        const SizedBox(height: 14),
-
-        // Photo Guidance Card
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: CraftTheme.cardSurface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: CraftTheme.borderLight),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "BETTER PRODUCT PHOTOS",
-                style: GoogleFonts.notoSans(fontSize: 11, fontWeight: FontWeight.bold, color: CraftTheme.terracottaPrimary, letterSpacing: 0.8),
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: CraftTheme.terracottaLight,
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(child: Text("✓ Good lighting", style: GoogleFonts.notoSans(fontSize: 11, color: CraftTheme.darkText))),
-                  Expanded(child: Text("✓ Product clearly visible", style: GoogleFonts.notoSans(fontSize: 11, color: CraftTheme.darkText))),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Expanded(child: Text("✓ Simple background", style: GoogleFonts.notoSans(fontSize: 11, color: CraftTheme.darkText))),
-                  Expanded(child: Text("✓ Show full product", style: GoogleFonts.notoSans(fontSize: 11, color: CraftTheme.darkText))),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        GestureDetector(
-          onTap: () => _pickImage(ImageSource.camera),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
-            decoration: BoxDecoration(
-              color: CraftTheme.tealLight,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: CraftTheme.tealTint.withValues(alpha: 0.4), width: 1.5),
+              child: const Icon(Icons.storefront_rounded, color: CraftTheme.terracottaPrimary, size: 22),
             ),
-            child: Column(
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CraftTheme.iconBadge(
-                  icon: Icons.camera_alt_rounded,
-                  color: CraftTheme.tealTint,
-                  lightColor: Colors.white,
-                  outerSize: 60,
-                  innerSize: 42,
-                  iconSize: 22,
-                ),
-                const SizedBox(height: 14),
                 Text(
-                  "TAKE CRAFT PHOTO",
+                  "CraftBridge",
                   style: GoogleFonts.notoSans(
-                    fontSize: 15,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: CraftTheme.tealTint,
+                    color: CraftTheme.darkText,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                Text(
+                  "CREATE PRODUCT",
+                  style: GoogleFonts.notoSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: CraftTheme.terracottaPrimary,
                     letterSpacing: 1.0,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  "Snap a photo with your device camera",
-                  style: GoogleFonts.notoSans(fontSize: 13, color: CraftTheme.mutedText),
-                ),
               ],
+            ),
+          ],
+        ),
+        TextButton.icon(
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const HomeScreen()),
+            );
+          },
+          icon: const Icon(Icons.arrow_forward_rounded, size: 16, color: CraftTheme.terracottaPrimary),
+          label: Text(
+            "Skip to Workspace →",
+            style: GoogleFonts.notoSans(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: CraftTheme.terracottaPrimary,
             ),
           ),
         ),
-        const SizedBox(height: 14),
+      ],
+    );
+  }
 
-        GestureDetector(
-          onTap: () => _pickImage(ImageSource.gallery),
-          child: Container(
+  // ─── 2. HERO PHOTO STUDIO PANEL ───────────────────────
+  Widget _buildHeroPhotoStudioPanel() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: CraftTheme.cardSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: CraftTheme.borderLight, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Studio Framing Visual Box
+          Container(
+            height: 240,
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
             decoration: BoxDecoration(
-              color: CraftTheme.cardSurface,
+              color: CraftTheme.terracottaLight.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: CraftTheme.borderLight, width: 1),
+              border: Border.all(color: CraftTheme.terracottaPrimary.withValues(alpha: 0.3), width: 1.5),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Stack(
               children: [
-                const Icon(Icons.photo_library_rounded, color: CraftTheme.darkText, size: 20),
-                const SizedBox(width: 10),
-                Text(
-                  "Choose from Device Gallery",
-                  style: GoogleFonts.notoSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: CraftTheme.darkText,
+                // Corner Framing Indicators
+                Positioned(top: 12, left: 12, child: _buildFrameCorner(top: true, left: true)),
+                Positioned(top: 12, right: 12, child: _buildFrameCorner(top: true, left: false)),
+                Positioned(bottom: 12, left: 12, child: _buildFrameCorner(top: false, left: true)),
+                Positioned(bottom: 12, right: 12, child: _buildFrameCorner(top: false, left: false)),
+
+                // Center Icon + Silhouette Frame
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: CraftTheme.terracottaPrimary,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: CraftTheme.terracottaPrimary.withValues(alpha: 0.3),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 36),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Put your craft in the frame",
+                        style: GoogleFonts.notoSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: CraftTheme.darkText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Position product centered with clear light",
+                        style: GoogleFonts.notoSans(fontSize: 12, color: CraftTheme.mutedText),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Floating Guidance Labels
+                Positioned(
+                  top: 16,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width < 600 ? 300 : 360,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildFloatingTag("GOOD LIGHT"),
+                        const SizedBox(width: 8),
+                        _buildFloatingTag("CLEAR FOCUS"),
+                        const SizedBox(width: 8),
+                        _buildFloatingTag("SHOW DETAILS"),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 16),
+
+          // Contextual Hero Caption
+          Text(
+            "CRAFT PHOTO STUDIO",
+            style: GoogleFonts.notoSans(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: CraftTheme.terracottaPrimary,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Original photos are preserved. Enhancement is optional assistance.",
+            textAlign: TextAlign.center,
+            style: GoogleFonts.notoSans(fontSize: 12, color: CraftTheme.mutedText),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFrameCorner({required bool top, required bool left}) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        border: Border(
+          top: top ? const BorderSide(color: CraftTheme.terracottaPrimary, width: 2.5) : BorderSide.none,
+          bottom: !top ? const BorderSide(color: CraftTheme.terracottaPrimary, width: 2.5) : BorderSide.none,
+          left: left ? const BorderSide(color: CraftTheme.terracottaPrimary, width: 2.5) : BorderSide.none,
+          right: !left ? const BorderSide(color: CraftTheme.terracottaPrimary, width: 2.5) : BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingTag(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: CraftTheme.cardSurface.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: CraftTheme.borderLight),
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.notoSans(
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+          color: CraftTheme.darkText,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  // ─── 3. RIGHT CONTENT COLUMN ──────────────────────────
+  Widget _buildRightContentColumn() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // STEP LABEL & HEADINGS
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: CraftTheme.terracottaLight,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            "STEP 1 OF 5 • CAPTURE",
+            style: GoogleFonts.notoSans(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: CraftTheme.terracottaPrimary,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        Text(
+          "Take a clean photo of your craft",
+          style: GoogleFonts.notoSans(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: CraftTheme.darkText,
+            height: 1.25,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        Text(
+          "CraftBridge keeps your original photo. Studio enhancement is optional assistance for catalog presentation.",
+          style: GoogleFonts.notoSans(
+            fontSize: 14,
+            height: 1.5,
+            color: CraftTheme.mutedText,
           ),
         ),
         const SizedBox(height: 24),
 
+        // IF IMAGE PICKED: STUDIO COMPARISON VIEW
+        if (_originalBytes != null) ...[
+          _buildStudioComparison(),
+          const SizedBox(height: 20),
+          _buildBackgroundPresetChips(),
+          const SizedBox(height: 24),
+          _buildActionButtons(),
+        ],
+
+        // IF NO IMAGE PICKED: GUIDANCE & CHECKLIST CARDS
+        if (_originalBytes == null) ...[
+          _buildPhotoGuidanceSection(),
+          const SizedBox(height: 20),
+          _buildPhotoChecklistSection(),
+          const SizedBox(height: 20),
+          _buildPhotoTipCard(),
+          const SizedBox(height: 24),
+          _buildActionButtons(),
+          const SizedBox(height: 24),
+          _buildSampleCraftSection(),
+        ],
+      ],
+    );
+  }
+
+  // ─── PHOTO GUIDANCE CARD ──────────────────────────────
+  Widget _buildPhotoGuidanceSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: CraftTheme.cardSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: CraftTheme.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.wb_sunny_outlined, size: 18, color: CraftTheme.terracottaPrimary),
+              const SizedBox(width: 8),
+              Text(
+                "MAKE YOUR PHOTO WORK",
+                style: GoogleFonts.notoSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: CraftTheme.terracottaPrimary,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 500;
+              final items = [
+                _buildGuidanceItem("01", "GOOD LIGHTING", "Use natural or even light.", Icons.light_mode_outlined),
+                _buildGuidanceItem("02", "CLEAR FOCUS", "Keep the product centered.", Icons.center_focus_strong_rounded),
+                _buildGuidanceItem("03", "SHOW THE CRAFT", "Keep details visible.", Icons.texture_rounded),
+              ];
+
+              if (isNarrow) {
+                return Column(children: items);
+              }
+              return Row(
+                children: items.map((item) => Expanded(child: item)).toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuidanceItem(String num, String title, String desc, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8, bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: CraftTheme.creamBase,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: CraftTheme.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                num,
+                style: GoogleFonts.notoSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: CraftTheme.terracottaPrimary,
+                ),
+              ),
+              Icon(icon, size: 16, color: CraftTheme.terracottaPrimary),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: GoogleFonts.notoSans(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: CraftTheme.darkText,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            desc,
+            style: GoogleFonts.notoSans(fontSize: 11, color: CraftTheme.mutedText),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── PHOTO CHECKLIST SECTION ─────────────────────────
+  Widget _buildPhotoChecklistSection() {
+    final hasPhoto = _originalBytes != null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: CraftTheme.cardSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: CraftTheme.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "PHOTO CHECK",
+            style: GoogleFonts.notoSans(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: CraftTheme.mutedText,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(child: _buildCheckItem("Product clearly visible", hasPhoto)),
+              Expanded(child: _buildCheckItem("Main details visible", hasPhoto)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(child: _buildCheckItem("Original photo preserved", true)),
+              Expanded(child: _buildCheckItem("Enhancement optional", true)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCheckItem(String label, bool isDone) {
+    return Row(
+      children: [
+        Icon(
+          isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+          size: 16,
+          color: isDone ? CraftTheme.tealTint : CraftTheme.captionText,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.notoSans(
+              fontSize: 12,
+              color: isDone ? CraftTheme.darkText : CraftTheme.mutedText,
+              fontWeight: isDone ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── PHOTO TIP CARD ───────────────────────────────────
+  Widget _buildPhotoTipCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: CraftTheme.terracottaLight.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: CraftTheme.terracottaPrimary.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.tips_and_updates_outlined, color: CraftTheme.terracottaPrimary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "PHOTO TIP",
+                  style: GoogleFonts.notoSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: CraftTheme.terracottaPrimary,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "Use a clean background and soft natural light when possible. Good light helps show craft details.",
+                  style: GoogleFonts.notoSans(fontSize: 12, color: CraftTheme.darkText, height: 1.4),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── ACTIONS AREA ─────────────────────────────────────
+  Widget _buildActionButtons() {
+    if (_originalBytes != null) {
+      return Row(
+        children: [
+          Expanded(
+            child: CraftSecondaryButton(
+              label: "Change Photo",
+              icon: Icons.refresh_rounded,
+              onPressed: () => setState(() {
+                _originalBytes = null;
+                _enhancedB64 = null;
+              }),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: CraftPrimaryButton(
+              label: "CONTINUE TO DESCRIPTION →",
+              icon: Icons.arrow_forward_rounded,
+              onPressed: () {
+                try {
+                  final provider = ProductDraftProvider.of(context, listen: false);
+                  provider.updateImage(
+                    originalBytes: _originalBytes,
+                    enhancedB64: _enhancedB64,
+                  );
+                } catch (_) {}
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => VoiceScreen(initialTranscript: _selectedCraftName),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+
+        final primaryBtn = CraftPrimaryButton(
+          label: "ADD PHOTO",
+          icon: Icons.camera_alt_rounded,
+          onPressed: () => _pickImage(ImageSource.camera),
+        );
+
+        final galleryBtn = CraftSecondaryButton(
+          label: "CHOOSE FROM GALLERY",
+          icon: Icons.photo_library_rounded,
+          onPressed: () => _pickImage(ImageSource.gallery),
+        );
+
+        final voiceBtn = OutlinedButton.icon(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const VoiceScreen()),
+            );
+          },
+          icon: const Icon(Icons.mic_rounded, size: 18, color: CraftTheme.violetTint),
+          label: Text(
+            "DESCRIBE BY VOICE INSTEAD",
+            style: GoogleFonts.notoSans(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: CraftTheme.violetTint,
+            ),
+          ),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            minimumSize: const Size(double.infinity, 52),
+            side: const BorderSide(color: CraftTheme.violetTint, width: 1.5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        );
+
+        if (isMobile) {
+          return Column(
+            children: [
+              primaryBtn,
+              const SizedBox(height: 10),
+              galleryBtn,
+              const SizedBox(height: 10),
+              voiceBtn,
+            ],
+          );
+        }
+
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(flex: 2, child: primaryBtn),
+                const SizedBox(width: 12),
+                Expanded(flex: 2, child: galleryBtn),
+              ],
+            ),
+            const SizedBox(height: 12),
+            voiceBtn,
+          ],
+        );
+      },
+    );
+  }
+
+  // ─── SAMPLE CRAFT SELECTION ───────────────────────────
+  Widget _buildSampleCraftSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Text(
           "Or test with sample craft photos:",
           style: GoogleFonts.notoSans(fontSize: 13, fontWeight: FontWeight.bold, color: CraftTheme.darkText),
         ),
         const SizedBox(height: 10),
-
         Wrap(
           spacing: 10,
           runSpacing: 10,
@@ -370,6 +849,7 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
+  // ─── STUDIO COMPARISON SLIDER ────────────────────────
   Widget _buildStudioComparison() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,7 +863,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 Text(
                   "Original vs Studio Enhanced",
                   style: GoogleFonts.notoSans(
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: CraftTheme.darkText,
                   ),
@@ -408,7 +888,7 @@ class _CameraScreenState extends State<CameraScreen> {
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
 
         // Truthful Photo Status Chips & View Mode
         Row(
@@ -449,7 +929,7 @@ class _CameraScreenState extends State<CameraScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
 
         LayoutBuilder(
           builder: (context, constraints) {
@@ -458,13 +938,13 @@ class _CameraScreenState extends State<CameraScreen> {
             final isSplit = _sliderPos > 0.02 && _sliderPos < 0.98;
 
             return Container(
-              height: 320,
+              height: 340,
               decoration: BoxDecoration(
                 color: _bgPresets[_selectedBgIndex]["color"] as Color,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: CraftTheme.borderLight, width: 1.5),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 4)),
                 ],
               ),
               child: ClipRRect(
@@ -491,7 +971,6 @@ class _CameraScreenState extends State<CameraScreen> {
                                   : const SizedBox.shrink()),
                         ),
                       ),
-
                       // Layer 2 (Top): Original Photo with Background (Clipped by slider)
                       if (_sliderPos > 0.001)
                         Positioned.fill(
@@ -515,7 +994,7 @@ class _CameraScreenState extends State<CameraScreen> {
                           bottom: 0,
                           child: Container(
                             width: 3,
-                            color: CraftTheme.tealTint,
+                            color: CraftTheme.terracottaPrimary,
                           ),
                         ),
 
@@ -523,12 +1002,12 @@ class _CameraScreenState extends State<CameraScreen> {
                       if (isSplit)
                         Positioned(
                           left: handleLeft,
-                          top: 140,
+                          top: 150,
                           child: Container(
                             width: 36,
                             height: 36,
                             decoration: const BoxDecoration(
-                              color: CraftTheme.tealTint,
+                              color: CraftTheme.terracottaPrimary,
                               shape: BoxShape.circle,
                               boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 6)],
                             ),
@@ -553,7 +1032,7 @@ class _CameraScreenState extends State<CameraScreen> {
                           right: 12,
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(color: CraftTheme.tealTint, borderRadius: BorderRadius.circular(999)),
+                            decoration: BoxDecoration(color: CraftTheme.terracottaPrimary, borderRadius: BorderRadius.circular(999)),
                             child: Text("Studio Enhanced", style: GoogleFonts.notoSans(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
                           ),
                         ),
@@ -586,10 +1065,10 @@ class _CameraScreenState extends State<CameraScreen> {
                 margin: const EdgeInsets.only(right: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isSelected ? CraftTheme.tealTint : CraftTheme.cardSurface,
+                  color: isSelected ? CraftTheme.terracottaPrimary : CraftTheme.cardSurface,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: isSelected ? CraftTheme.tealTint : CraftTheme.borderLight,
+                    color: isSelected ? CraftTheme.terracottaPrimary : CraftTheme.borderLight,
                     width: 1.5,
                   ),
                 ),
@@ -615,10 +1094,10 @@ class _CameraScreenState extends State<CameraScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isActive ? CraftTheme.tealTint : CraftTheme.cardSurface,
+          color: isActive ? CraftTheme.terracottaPrimary : CraftTheme.cardSurface,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: isActive ? CraftTheme.tealTint : CraftTheme.borderLight,
+            color: isActive ? CraftTheme.terracottaPrimary : CraftTheme.borderLight,
             width: 1,
           ),
         ),
@@ -633,58 +1112,6 @@ class _CameraScreenState extends State<CameraScreen> {
       ),
     );
   }
-
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: () => setState(() {
-              _originalBytes = null;
-              _enhancedB64 = null;
-            }),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-              side: const BorderSide(color: CraftTheme.borderLight, width: 1.5),
-            ),
-            child: Text("Change Photo", style: GoogleFonts.notoSans(fontSize: 14, fontWeight: FontWeight.bold, color: CraftTheme.darkText)),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 2,
-          child: ElevatedButton(
-            onPressed: () {
-              try {
-                final provider = ProductDraftProvider.of(context, listen: false);
-                provider.updateImage(
-                  originalBytes: _originalBytes,
-                  enhancedB64: _enhancedB64,
-                );
-              } catch (_) {}
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => VoiceScreen(initialTranscript: _selectedCraftName),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: CraftTheme.terracottaPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-              elevation: 2,
-            ),
-            child: Text(
-              "CONTINUE TO DESCRIPTION →",
-              style: GoogleFonts.notoSans(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class _BeforeClipper extends CustomClipper<Rect> {
@@ -697,3 +1124,4 @@ class _BeforeClipper extends CustomClipper<Rect> {
   @override
   bool shouldReclip(_BeforeClipper oldClipper) => oldClipper.fraction != fraction;
 }
+

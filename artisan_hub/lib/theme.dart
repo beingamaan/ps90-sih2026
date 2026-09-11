@@ -2,54 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CraftTheme {
-  // ─── COLOR PALETTE ─────────────────────────────────────
-  static const Color creamBase = Color(0xFFFAF8F5);
-  static const Color cardSurface = Color(0xFFFFFFFF);
-  static const Color darkText = Color(0xFF1F1F1F);
-  static const Color mutedText = Color(0xFF5F6368);
-  static const Color borderLight = Color(0xFFE2DED9);
+  // ─── CRAFTBRIDGE COLOUR SYSTEM (PHASE 3.5) ────────────────
+  static const Color creamBase = Color(0xFFF7F3ED);       // Primary background: Warm Parchment
+  static const Color cardSurface = Color(0xFFFFFDFC);     // Primary surface: Soft Ivory
+  static const Color darkText = Color(0xFF292522);        // Primary text: Charcoal Brown
+  static const Color mutedText = Color(0xFF6F6963);       // Secondary text: Warm Grey
+  static const Color captionText = Color(0xFF8D8680);     // Caption / Helper text
+  static const Color borderLight = Color(0xFFDED6CC);     // Borders/dividers: Sandstone
 
-  // Primary Terracotta/Coral Brand Accent (Indian Craft Identity)
-  static const Color terracottaPrimary = Color(0xFFD64527);
-  static const Color terracottaDark = Color(0xFFB0331A);
-  static const Color terracottaLight = Color(0xFFFBEBE8);
+  // Primary Brand — Terracotta
+  static const Color terracottaPrimary = Color(0xFFD94A2B); // Primary brand / CTAs
+  static const Color terracottaDark = Color(0xFFB83B22);    // Primary hover/pressed: Deep Terracotta
+  static const Color terracottaLight = Color(0xFFF6E4DC);   // Light brand surface: Clay Tint
 
-  // Functional Tints
-  static const Color violetTint = Color(0xFF6B42E0);
-  static const Color violetLight = Color(0xFFF0EBFF);
+  // Trust / Seller Control — Muted Teal
+  static const Color tealTint = Color(0xFF16877C);         // Trust / seller-confirmed
+  static const Color tealLight = Color(0xFFE5F2EF);        // Trust background: Pale Sage
 
-  static const Color tealTint = Color(0xFF00897B);
-  static const Color tealLight = Color(0xFFE0F2F1);
+  // Voice Interaction — Dusty Plum
+  static const Color violetTint = Color(0xFF7656B8);       // Voice interaction / mic
+  static const Color violetLight = Color(0xFFEEE9FA);      // Voice background: Soft Lavender
 
-  static const Color coralTint = Color(0xFFD64527);
-  static const Color coralLight = Color(0xFFFBEBE8);
+  // Review / Attention — Ochre
+  static const Color amberTint = Color(0xFFA87528);        // Review / attention / warning
+  static const Color amberLight = Color(0xFFF7EEDB);       // Review background: Warm Sand
 
-  static const Color blueTint = Color(0xFF1A73E8);
-  static const Color blueLight = Color(0xFFE8F0FE);
-
-  static const Color greenTint = Color(0xFF2E7D32);
-  static const Color greenLight = Color(0xFFE8F5E9);
-
-  static const Color amberTint = Color(0xFFE65100);
-  static const Color amberLight = Color(0xFFFFF3E0);
-
-  // Tag Pill Tint Colors Cycle
-  static const List<Color> tagBgColors = [
-    Color(0xFFF0EBFF),
-    Color(0xFFFBEBE8),
-    Color(0xFFE0F2F1),
-    Color(0xFFE8F0FE),
-  ];
-  
-  static const List<Color> tagTextColors = [
-    Color(0xFF6B42E0),
-    Color(0xFFD64527),
-    Color(0xFF00897B),
-    Color(0xFF1A73E8),
-  ];
+  // ─── LEGACY COLOR ALIASES (Mapped to Phase 3.5 Palette) ────
+  static const Color blueLight = tealLight;
+  static const Color blueTint = tealTint;
+  static const Color coralLight = terracottaLight;
+  static const Color coralTint = terracottaPrimary;
+  static const Color greenLight = tealLight;
+  static const Color greenTint = tealTint;
 
   // Maximum content width for Desktop Web Responsiveness
-  static const double maxDesktopContentWidth = 960.0;
+  static const double maxDesktopContentWidth = 1140.0;
 
   // ─── THEME DATA ────────────────────────────────────────
   static ThemeData get themeData {
@@ -63,34 +50,44 @@ class CraftTheme {
       ),
       textTheme: GoogleFonts.notoSansTextTheme().copyWith(
         headlineMedium: GoogleFonts.notoSans(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: darkText,
+          height: 1.25,
+        ),
+        titleLarge: GoogleFonts.notoSans(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           color: darkText,
-        ),
-        titleLarge: GoogleFonts.notoSans(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: darkText,
+          height: 1.3,
         ),
         titleMedium: GoogleFonts.notoSans(
-          fontSize: 16,
+          fontSize: 18,
           fontWeight: FontWeight.w600,
           color: darkText,
+          height: 1.35,
         ),
         bodyLarge: GoogleFonts.notoSans(
           fontSize: 15,
           color: darkText,
+          height: 1.5,
         ),
         bodyMedium: GoogleFonts.notoSans(
           fontSize: 14,
           color: mutedText,
+          height: 1.5,
+        ),
+        bodySmall: GoogleFonts.notoSans(
+          fontSize: 12,
+          color: captionText,
+          height: 1.4,
         ),
       ),
       cardTheme: CardThemeData(
         color: cardSurface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           side: const BorderSide(color: borderLight, width: 1),
         ),
       ),
@@ -104,9 +101,9 @@ class CraftTheme {
     required IconData icon,
     required Color color,
     required Color lightColor,
-    double outerSize = 44,
-    double innerSize = 28,
-    double iconSize = 18,
+    double outerSize = 48,
+    double innerSize = 32,
+    double iconSize = 20,
   }) {
     return Container(
       width: outerSize,
@@ -129,24 +126,24 @@ class CraftTheme {
     );
   }
 
-  /// Pill Tag Chip Helper
-  static Widget tagChip(String label, int index) {
-    final bg = tagBgColors[index % tagBgColors.length];
-    final text = tagTextColors[index % tagTextColors.length];
+  /// Contextual Tag Chip Helper
+  static Widget tagChip(String label, {Color? bg, Color? text}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: bg,
+        color: bg ?? terracottaLight,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: borderLight, width: 1),
       ),
       child: Text(
         label,
         style: GoogleFonts.notoSans(
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: text,
+          color: text ?? darkText,
         ),
       ),
     );
   }
 }
+

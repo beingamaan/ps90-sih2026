@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 
-/// Primary brand CTA button with 48px minimum touch target
+/// Primary brand CTA button with 52px touch target height and Terracotta styling
 class CraftPrimaryButton extends StatelessWidget {
   final String label;
   final IconData? icon;
@@ -25,11 +25,11 @@ class CraftPrimaryButton extends StatelessWidget {
         backgroundColor: CraftTheme.terracottaPrimary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        minimumSize: const Size(double.infinity, 50),
+        minimumSize: const Size(double.infinity, 52),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(14),
         ),
-        elevation: 1,
+        elevation: 0,
       ),
       child: isLoading
           ? const SizedBox(
@@ -80,11 +80,12 @@ class CraftSecondaryButton extends StatelessWidget {
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         foregroundColor: CraftTheme.darkText,
+        backgroundColor: CraftTheme.cardSurface,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        minimumSize: const Size(double.infinity, 50),
+        minimumSize: const Size(double.infinity, 52),
         side: const BorderSide(color: CraftTheme.borderLight, width: 1.5),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(14),
         ),
       ),
       child: Row(
@@ -107,3 +108,4 @@ class CraftSecondaryButton extends StatelessWidget {
     );
   }
 }
+
