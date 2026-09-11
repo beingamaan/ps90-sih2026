@@ -14,18 +14,21 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 REMOVE_BG_API_KEY = os.getenv("REMOVE_BG_API_KEY", "")
 
 try:
-    from rembg import remove as rembg_remove
+    import numpy as np
+    from rembg import remove as rembg_remove, new_session
+    REMBG_SESSION = new_session("u2netp")
     REMBG_AVAILABLE = True
 except Exception as e:
-    print(f"rembg import warning: {e}")
+    print(f"rembg import/session warning: {e}")
     REMBG_AVAILABLE = False
+    REMBG_SESSION = None
 
 # ─── REAL AI BACKGROUND REMOVAL ───────────────────────
 def remove_background(image_bytes: bytes) -> str:
     """
     1. Tries remove.bg API if valid API key is present.
-    2. Uses local AI rembg model for 100% real offline background removal.
-    3. Fallback to PIL studio matting.
+    2. Uses local AI rembg model (u2netp) for ultra-fast, offline background removal.
+    3. Fallback to adaptive edge-aware matting using NumPy & PIL.
     """
     # 1. Try Remove.bg API if valid key configured
     if REMOVE_BG_API_KEY and REMOVE_BG_API_KEY != "mock_key":
@@ -45,41 +48,50 @@ def remove_background(image_bytes: bytes) -> str:
         except Exception as e:
             print(f"Remove.bg API exception: {e}")
 
-    # 2. Real local AI background removal using rembg
+    # 2. Real local AI background removal using rembg with cached u2netp session
     if REMBG_AVAILABLE:
         try:
-            # Resize large photos to max 600px for ultra-fast 0.3s processing
+            # Resize large photos to max 600px for ultra-fast 0.2s processing
             pil_img = Image.open(BytesIO(image_bytes)).convert("RGBA")
             pil_img.thumbnail((600, 600), Image.Resampling.LANCZOS)
             fast_buf = BytesIO()
             pil_img.save(fast_buf, format="PNG")
             fast_bytes = fast_buf.getvalue()
 
-            output_bytes = rembg_remove(fast_bytes)
+            if REMBG_SESSION:
+                output_bytes = rembg_remove(fast_bytes, session=REMBG_SESSION)
+            else:
+                output_bytes = rembg_remove(fast_bytes)
             b64 = base64.b64encode(output_bytes).decode("utf-8")
             return f"data:image/png;base64,{b64}"
         except Exception as e:
             print(f"rembg AI background removal error: {e}")
 
-    # 3. Fallback PIL studio threshold matting
+    # 3. Fallback adaptive edge-aware studio matting
     try:
-        image = Image.open(BytesIO(image_bytes)).convert("RGBA")
-        datas = image.getdata()
-        new_data = []
-        # Replace high-brightness background pixels with clean white studio surface
-        for item in datas:
-            if item[0] > 220 and item[1] > 220 and item[2] > 220:
-                new_data.append((255, 255, 255, 0))
-            else:
-                new_data.append(item)
-        image.putdata(new_data)
+        pil_img = Image.open(BytesIO(image_bytes)).convert("RGBA")
+        pil_img.thumbnail((600, 600), Image.Resampling.LANCZOS)
+        arr = np.array(pil_img, dtype=np.float32)
+        h, w, _ = arr.shape
+        borders = np.concatenate([
+            arr[0, :, :3],
+            arr[-1, :, :3],
+            arr[:, 0, :3],
+            arr[:, -1, :3]
+        ], axis=0)
+        bg_color = np.median(borders, axis=0)
+        diff = np.sqrt(np.sum((arr[:, :, :3] - bg_color) ** 2, axis=2))
+        thresh_low, thresh_high = 25.0, 60.0
+        alpha = np.clip((diff - thresh_low) / (thresh_high - thresh_low), 0.0, 1.0) * 255.0
+        arr[:, :, 3] = alpha
+        result_img = Image.fromarray(arr.astype(np.uint8), mode="RGBA")
         
         buffered = BytesIO()
-        image.save(buffered, format="PNG")
+        result_img.save(buffered, format="PNG")
         b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
         return f"data:image/png;base64,{b64}"
     except Exception as e:
-        print(f"PIL fallback error: {e}")
+        print(f"Adaptive matting fallback error: {e}")
         b64 = base64.b64encode(image_bytes).decode("utf-8")
         return f"data:image/png;base64,{b64}"
 

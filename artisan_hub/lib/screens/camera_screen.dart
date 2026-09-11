@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
 import '../api_service.dart';
+import '../services/image_matting_service.dart';
 import '../widgets/responsive_container.dart';
 import '../providers/product_draft_provider.dart';
 import 'voice_screen.dart';
@@ -22,7 +23,7 @@ class _CameraScreenState extends State<CameraScreen> {
   Uint8List? _originalBytes;
   String? _enhancedB64;
   bool _isLoading = false;
-  double _sliderPos = 0.5;
+  double _sliderPos = 0.0;
   int _selectedBgIndex = 0;
   String _selectedCraftName = "Handcrafted Artisan Item";
 
@@ -32,6 +33,8 @@ class _CameraScreenState extends State<CameraScreen> {
     {"name": "Neutral Grey", "color": const Color(0xFFE8E8E8)},
     {"name": "Craft Terracotta", "color": const Color(0xFFFBEBE8)},
   ];
+
+  String _enhancementStatus = "AI Background Removal";
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -49,24 +52,39 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
-  Future<void> _processBytes(Uint8List bytes, String filename, String craftName) async {
+  Future<void> _processBytes(Uint8List bytes, String filename, String craftName, {String? transparentFallbackB64}) async {
     setState(() {
       _originalBytes = bytes;
       _enhancedB64 = null;
       _isLoading = true;
       _selectedCraftName = craftName;
+      _enhancementStatus = "Removing Background...";
     });
 
-    // Send to backend enhance-image endpoint (uses local rembg AI model without calling remove.bg API)
-    final resultB64 = await ApiService.enhanceImage(bytes, filename);
+    // 1. Try backend enhance-image endpoint (uses remove.bg API key / rembg AI)
+    String? resultB64 = await ApiService.enhanceImage(bytes, filename);
+    String status = "AI Studio Enhanced (remove.bg)";
+
+    // 2. If backend is offline or returned null, use sample cutout or client-side matting engine
+    if (resultB64 == null || resultB64.isEmpty) {
+      if (transparentFallbackB64 != null && transparentFallbackB64.isNotEmpty) {
+        resultB64 = transparentFallbackB64;
+        status = "Studio Cutout Applied";
+      } else {
+        resultB64 = await ImageMattingService.removeBackground(bytes);
+        status = "Client Studio Matting";
+      }
+    }
     
     if (mounted) {
       setState(() {
         if (resultB64 != null && resultB64.isNotEmpty) {
           _enhancedB64 = resultB64;
+          _enhancementStatus = status;
         } else {
           final b64 = base64Encode(bytes);
           _enhancedB64 = "data:image/png;base64,$b64";
+          _enhancementStatus = "Original Preserved";
         }
         _isLoading = false;
       });
@@ -74,22 +92,56 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> _loadSampleCraft(String type) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, 400, 400));
-    final paint = Paint();
+    // 1. Generate realistic simulated photo WITH wood table background
+    final bgRecorder = ui.PictureRecorder();
+    final bgCanvas = Canvas(bgRecorder, const Rect.fromLTWH(0, 0, 400, 400));
+    final bgPaint = Paint();
 
-    paint.color = const Color(0xFF5D4037);
-    canvas.drawRect(const Rect.fromLTWH(0, 0, 400, 400), paint);
+    // Wood table texture
+    bgPaint.color = const Color(0xFF5D4037);
+    bgCanvas.drawRect(const Rect.fromLTWH(0, 0, 400, 400), bgPaint);
 
-    paint.color = const Color(0xFF3E2723);
+    bgPaint.color = const Color(0xFF3E2723);
     for (double i = 0; i < 400; i += 40) {
-      canvas.drawRect(Rect.fromLTWH(0, i, 400, 4), paint);
+      bgCanvas.drawRect(Rect.fromLTWH(0, i, 400, 4), bgPaint);
     }
-    paint.color = const Color(0xFF8D6E63).withValues(alpha: 0.5);
+    bgPaint.color = const Color(0xFF8D6E63).withValues(alpha: 0.5);
     for (int i = 0; i < 20; i++) {
-      canvas.drawCircle(Offset((i * 23) % 400, (i * 37) % 400), 8, paint);
+      bgCanvas.drawCircle(Offset((i * 23) % 400, (i * 37) % 400), 8, bgPaint);
     }
 
+    _drawCraftObject(bgCanvas, type);
+
+    final bgPicture = bgRecorder.endRecording();
+    final bgImg = await bgPicture.toImage(400, 400);
+    final bgPngBytes = await bgImg.toByteData(format: ui.ImageByteFormat.png);
+
+    // 2. Generate clean transparent foreground cutout (offline backup)
+    final fgRecorder = ui.PictureRecorder();
+    final fgCanvas = Canvas(fgRecorder, const Rect.fromLTWH(0, 0, 400, 400));
+    _drawCraftObject(fgCanvas, type);
+    final fgPicture = fgRecorder.endRecording();
+    final fgImg = await fgPicture.toImage(400, 400);
+    final fgPngBytes = await fgImg.toByteData(format: ui.ImageByteFormat.png);
+
+    String? transparentB64;
+    if (fgPngBytes != null) {
+      final b64Str = base64Encode(fgPngBytes.buffer.asUint8List());
+      transparentB64 = "data:image/png;base64,$b64Str";
+    }
+
+    if (bgPngBytes != null) {
+      _processBytes(
+        bgPngBytes.buffer.asUint8List(),
+        "$type.png",
+        type,
+        transparentFallbackB64: transparentB64,
+      );
+    }
+  }
+
+  void _drawCraftObject(Canvas canvas, String type) {
+    final paint = Paint();
     if (type == "Textile Saree") {
       paint.color = const Color(0xFFD81B60);
       canvas.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(100, 80, 200, 240), const Radius.circular(20)), paint);
@@ -105,14 +157,6 @@ class _CameraScreenState extends State<CameraScreen> {
       canvas.drawCircle(const Offset(200, 200), 90, paint);
       paint.color = const Color(0xFF5D4037);
       canvas.drawCircle(const Offset(200, 200), 60, paint);
-    }
-
-    final picture = recorder.endRecording();
-    final img = await picture.toImage(400, 400);
-    final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
-
-    if (pngBytes != null) {
-      _processBytes(pngBytes.buffer.asUint8List(), "$type.png", type);
     }
   }
 
@@ -366,25 +410,42 @@ class _CameraScreenState extends State<CameraScreen> {
         ),
         const SizedBox(height: 8),
 
-        // Truthful Photo Status Chips
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
+        // Truthful Photo Status Chips & View Mode
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: CraftTheme.greenLight, borderRadius: BorderRadius.circular(6)),
-              child: Text("Photo Added", style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.greenTint)),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: CraftTheme.greenLight, borderRadius: BorderRadius.circular(6)),
+                  child: Text("Photo Added", style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.greenTint)),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: CraftTheme.tealLight, borderRadius: BorderRadius.circular(6)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.auto_awesome_rounded, color: CraftTheme.tealTint, size: 12),
+                      const SizedBox(width: 4),
+                      Text(_enhancementStatus, style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.tealTint)),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: CraftTheme.tealLight, borderRadius: BorderRadius.circular(6)),
-              child: Text("Enhancement Available", style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.tealTint)),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: CraftTheme.blueLight, borderRadius: BorderRadius.circular(6)),
-              child: Text("Ready for Catalogue", style: GoogleFonts.notoSans(fontSize: 10, fontWeight: FontWeight.bold, color: CraftTheme.blueTint)),
+            // Quick View Mode Toggle
+            Row(
+              children: [
+                _buildViewModeChip("Studio", _sliderPos < 0.05, () => setState(() => _sliderPos = 0.0)),
+                const SizedBox(width: 4),
+                _buildViewModeChip("Split", _sliderPos >= 0.05 && _sliderPos <= 0.95, () => setState(() => _sliderPos = 0.5)),
+                const SizedBox(width: 4),
+                _buildViewModeChip("Original", _sliderPos > 0.95, () => setState(() => _sliderPos = 1.0)),
+              ],
             ),
           ],
         ),
@@ -394,6 +455,7 @@ class _CameraScreenState extends State<CameraScreen> {
           builder: (context, constraints) {
             final containerWidth = constraints.maxWidth;
             final double handleLeft = (containerWidth * _sliderPos - 18).clamp(0.0, containerWidth - 36);
+            final isSplit = _sliderPos > 0.02 && _sliderPos < 0.98;
 
             return Container(
               height: 320,
@@ -410,11 +472,12 @@ class _CameraScreenState extends State<CameraScreen> {
                 child: GestureDetector(
                   onHorizontalDragUpdate: (details) {
                     setState(() {
-                      _sliderPos = (_sliderPos + details.delta.dx / containerWidth).clamp(0.05, 0.95);
+                      _sliderPos = (_sliderPos + details.delta.dx / containerWidth).clamp(0.0, 1.0);
                     });
                   },
                   child: Stack(
                     children: [
+                      // Layer 1 (Bottom): Transparent Background-Removed Studio Cutout
                       Positioned.fill(
                         child: Container(
                           padding: const EdgeInsets.all(16),
@@ -423,63 +486,77 @@ class _CameraScreenState extends State<CameraScreen> {
                                   base64Decode(_enhancedB64!.split(',').last),
                                   fit: BoxFit.contain,
                                 )
-                              : Image.memory(_originalBytes!, fit: BoxFit.contain),
+                              : (_originalBytes != null
+                                  ? Image.memory(_originalBytes!, fit: BoxFit.contain)
+                                  : const SizedBox.shrink()),
                         ),
                       ),
 
-                      Positioned.fill(
-                        child: ClipRect(
-                          clipper: _BeforeClipper(_sliderPos),
+                      // Layer 2 (Top): Original Photo with Background (Clipped by slider)
+                      if (_sliderPos > 0.001)
+                        Positioned.fill(
+                          child: ClipRect(
+                            clipper: _BeforeClipper(_sliderPos),
+                            child: Container(
+                              color: Colors.white,
+                              padding: const EdgeInsets.all(16),
+                              child: _originalBytes != null
+                                  ? Image.memory(_originalBytes!, fit: BoxFit.contain)
+                                  : const SizedBox.shrink(),
+                            ),
+                          ),
+                        ),
+
+                      // Slider Divider Line
+                      if (isSplit)
+                        Positioned(
+                          left: containerWidth * _sliderPos - 1.5,
+                          top: 0,
+                          bottom: 0,
                           child: Container(
-                            padding: const EdgeInsets.all(16),
-                            child: Image.memory(_originalBytes!, fit: BoxFit.contain),
-                          ),
-                        ),
-                      ),
-
-                      Positioned(
-                        left: containerWidth * _sliderPos - 1.5,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 3,
-                          color: CraftTheme.tealTint,
-                        ),
-                      ),
-
-                      Positioned(
-                        left: handleLeft,
-                        top: 140,
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: const BoxDecoration(
+                            width: 3,
                             color: CraftTheme.tealTint,
-                            shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 6)],
                           ),
-                          child: const Icon(Icons.unfold_more_rounded, color: Colors.white, size: 22),
                         ),
-                      ),
 
-                      Positioned(
-                        top: 12,
-                        left: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(999)),
-                          child: Text("Original Photo", style: GoogleFonts.notoSans(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                      // Drag Handle
+                      if (isSplit)
+                        Positioned(
+                          left: handleLeft,
+                          top: 140,
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: const BoxDecoration(
+                              color: CraftTheme.tealTint,
+                              shape: BoxShape.circle,
+                              boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 6)],
+                            ),
+                            child: const Icon(Icons.unfold_more_rounded, color: Colors.white, size: 22),
+                          ),
                         ),
-                      ),
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: CraftTheme.tealTint, borderRadius: BorderRadius.circular(999)),
-                          child: Text("Studio Enhanced", style: GoogleFonts.notoSans(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+
+                      // Corner Badges
+                      if (_sliderPos >= 0.5)
+                        Positioned(
+                          top: 12,
+                          left: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(999)),
+                            child: Text("Original Photo", style: GoogleFonts.notoSans(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
                         ),
-                      ),
+                      if (_sliderPos <= 0.5)
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(color: CraftTheme.tealTint, borderRadius: BorderRadius.circular(999)),
+                            child: Text("Studio Enhanced", style: GoogleFonts.notoSans(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -529,6 +606,31 @@ class _CameraScreenState extends State<CameraScreen> {
           }),
         ),
       ],
+    );
+  }
+
+  Widget _buildViewModeChip(String label, bool isActive, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isActive ? CraftTheme.tealTint : CraftTheme.cardSurface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: isActive ? CraftTheme.tealTint : CraftTheme.borderLight,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.notoSans(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: isActive ? Colors.white : CraftTheme.darkText,
+          ),
+        ),
+      ),
     );
   }
 

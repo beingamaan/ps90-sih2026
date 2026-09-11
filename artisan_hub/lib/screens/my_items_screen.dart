@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
@@ -110,6 +111,8 @@ class _MyItemsScreenState extends State<MyItemsScreen> with SingleTickerProvider
             final price = (item["buyer_price"] as num?)?.toInt() ?? 0;
             final statusStr = item["status"] ?? "Draft";
             final category = item["category"] ?? "Handicraft";
+            final imageUrl = item["image_url"] as String? ?? "";
+            final isBase64Img = imageUrl.startsWith("data:image") || (imageUrl.length > 100 && !imageUrl.startsWith("http"));
 
             return Container(
               margin: const EdgeInsets.only(bottom: 14),
@@ -122,12 +125,28 @@ class _MyItemsScreenState extends State<MyItemsScreen> with SingleTickerProvider
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
-                      color: CraftTheme.terracottaLight,
+                      color: CraftTheme.cardSurface,
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: CraftTheme.borderLight),
                     ),
-                    child: const Icon(Icons.checkroom_rounded, color: CraftTheme.terracottaPrimary, size: 24),
+                    clipBehavior: Clip.antiAlias,
+                    child: isBase64Img
+                        ? Image.memory(
+                            base64Decode(imageUrl.contains(",") ? imageUrl.split(",").last : imageUrl),
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => const Center(
+                              child: Icon(Icons.checkroom_rounded, color: CraftTheme.terracottaPrimary, size: 24),
+                            ),
+                          )
+                        : Container(
+                            color: CraftTheme.terracottaLight,
+                            child: const Center(
+                              child: Icon(Icons.checkroom_rounded, color: CraftTheme.terracottaPrimary, size: 24),
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(

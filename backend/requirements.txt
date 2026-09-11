@@ -7,3 +7,6 @@ gTTS
 google-genai
 requests
 python-dotenv
+rembg
+onnxruntime
+numpy

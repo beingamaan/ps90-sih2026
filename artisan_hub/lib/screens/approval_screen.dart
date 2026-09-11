@@ -61,6 +61,14 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
   Future<void> _publishNow() async {
     setState(() => _isPublishing = true);
 
+    String imageUrl = "https://example.com/craft.jpg";
+    try {
+      final draft = ProductDraftProvider.of(context, listen: false).currentDraft;
+      if (draft.enhancedImageB64 != null && draft.enhancedImageB64!.isNotEmpty) {
+        imageUrl = draft.enhancedImageB64!;
+      }
+    } catch (_) {}
+
     final payload = {
       "title": widget.title,
       "description": widget.description,
@@ -69,7 +77,7 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
       "cost_floor": widget.costFloor,
       "buyer_price": widget.buyerPrice,
       "category": widget.category,
-      "image_url": "https://example.com/craft.jpg",
+      "image_url": imageUrl,
       "marketplace": _networks[_selectedNetwork]["name"]
     };
 

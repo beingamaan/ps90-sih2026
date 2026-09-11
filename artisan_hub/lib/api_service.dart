@@ -7,21 +7,47 @@ class ApiService {
   static String get baseUrl => ApiConfig.baseUrl;
 
 
-  // ─── 1. ENHANCE IMAGE (REMOVE.BG) ─────────────────────
+  // ─── 1. ENHANCE IMAGE (REMOVE.BG & LOCAL AI) ─────────
+  static const String removeBgApiKey = String.fromEnvironment(
+    'REMOVE_BG_API_KEY',
+    defaultValue: 'roVNnnb34xzwNjLKsZCc9854',
+  );
+
   static Future<String?> enhanceImage(Uint8List imageBytes, String filename) async {
+    // Priority 1: Direct Remove.bg API call with user key (instant & works everywhere without local backend)
+    if (removeBgApiKey.isNotEmpty && removeBgApiKey != 'mock_key') {
+      try {
+        final uri = Uri.parse('https://api.remove.bg/v1.0/removebg');
+        final request = http.MultipartRequest('POST', uri);
+        request.headers['X-Api-Key'] = removeBgApiKey;
+        request.fields['size'] = 'auto';
+        request.files.add(http.MultipartFile.fromBytes('image_file', imageBytes, filename: filename));
+
+        final streamedResponse = await request.send().timeout(const Duration(seconds: 12));
+        final response = await http.Response.fromStream(streamedResponse);
+
+        if (response.statusCode == 200) {
+          final b64 = base64Encode(response.bodyBytes);
+          return 'data:image/png;base64,$b64';
+        }
+      } catch (e) {
+        // Fallthrough to local backend / client matting
+      }
+    }
+
+    // Priority 2: Local Python Backend (FastAPI rembg u2netp)
     try {
       final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/enhance-image'));
       request.files.add(http.MultipartFile.fromBytes('file', imageBytes, filename: filename));
-      final streamedResponse = await request.send();
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 4));
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['enhanced_image'];
       }
-    } catch (e) {
-      print('Enhance Image API Error: $e');
-    }
+    } catch (_) {}
+
     return null;
   }
 
